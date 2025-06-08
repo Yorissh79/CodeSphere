@@ -5,7 +5,11 @@ import UserModel from "../models/userModel";
 interface UserPayload {
     _id: string;
     name: string;
+    group: string;
     email: string;
+    password: string;
+    surname: string;
+    role: string;
 }
 
 interface AuthenticatedRequest extends Request {
@@ -29,9 +33,9 @@ const userControl = async (
 
         const decoded = jwt.verify(token, secret) as { id: string };
 
-        req.user = await UserModel.findById(decoded.id).select("-password");
+        const user = await UserModel.findById(decoded.id).select("-password");
 
-        if (!req.user) {
+        if (!user) {
             return res.status(401).json({ error: "User not found" });
         }
 
