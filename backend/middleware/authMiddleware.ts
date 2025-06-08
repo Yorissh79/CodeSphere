@@ -5,7 +5,7 @@ import UserModel from "../models/userModel";
 interface UserPayload {
     _id: string;
     name: string;
-    group: string;
+    group?: string;
     email: string;
     password: string;
     surname: string;

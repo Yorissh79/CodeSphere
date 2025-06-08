@@ -5,16 +5,13 @@ import {RouterProvider} from "react-router-dom";
 import {router} from "./router/router.ts";
 import {Provider} from "react-redux";
 import {store} from "./store/store.ts";
-import { ThemeProvider } from './context/ThemeContext';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
       <Provider store={store}>
-          <ThemeProvider>
-              <RouterProvider router={router}>
+          <RouterProvider router={router}>
 
-              </RouterProvider>
-          </ThemeProvider>
+          </RouterProvider>
       </Provider>
   </StrictMode>,
 )
