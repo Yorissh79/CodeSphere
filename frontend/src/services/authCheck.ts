@@ -5,7 +5,10 @@ interface AuthCheckResponse {
         id: string;
         name: string;
         email: string;
-    };
+        surname: string
+        group: string;
+        role: string;
+};
 }
 
 export const authCheck = createApi({
