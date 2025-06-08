@@ -1,3 +1,5 @@
+import {Link} from "react-router-dom";
+
 function Fsection() {
     return (
         <section className="text-center py-16">
@@ -14,9 +16,9 @@ function Fsection() {
                 <button className="px-6 py-2 border border-gray-300 text-gray-800 dark:text-white dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
                     TRY ONLINE EDITOR
                 </button>
-                <button className="px-6 py-2 border border-gray-300 text-gray-800 dark:text-white dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+                <Link to={"/registration/teacher/signup"} className="px-6 py-2 border border-gray-300 text-gray-800 dark:text-white dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
                     JOIN AS TEACHER
-                </button>
+                </Link>
             </div>
         </section>
     );

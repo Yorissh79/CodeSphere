@@ -15,6 +15,8 @@ import StudentLayout from "../components/studentLayout/StudentLayout.tsx";
 import signupTeacher from "../pages/signup/SignupTeacher.tsx";
 import SignLayout from "../components/signlayout/SignLayout.tsx";
 import teacherLayout from "../components/teacherlayout/TeacherLayout.tsx";
+import TeacherAppLayout from "../pages/auth/TeacherAuth.tsx";
+import AdminAuth from "../pages/auth/AdminAuth.tsx";
 
 export const router = createBrowserRouter([
     {
@@ -66,8 +68,16 @@ export const router = createBrowserRouter([
         ]
     },
     {
-        path: '/check/',
+        path: '/check/student',
         Component: AppLayout
+    },
+    {
+        path: '/check/teacher',
+        Component: TeacherAppLayout
+    },
+    {
+        path: '/admin',
+        Component: AdminAuth
     },
     {
         path: "*",

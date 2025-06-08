@@ -1,13 +1,17 @@
 import { useCheckAuthQuery } from "../../../services/authCheck.ts";
+import {useEffect} from "react";
 
 const Home = () => {
-    const { data, error, isLoading } = useCheckAuthQuery();
+    const { data, error, isLoading, refetch } = useCheckAuthQuery();
+
+    useEffect(() => {
+        refetch();
+    }, [])
 
     if (isLoading) return <p>Loading...</p>;
     if (error || !data?.user) return <p>Error</p>;
 
     const { name, surname, email, group, role } = data.user;
-
 
     return (
         <div className="bg-white dark:bg-gray-600 flex flex-col w-full h-screen p-4 text-black dark:text-white">
@@ -15,7 +19,6 @@ const Home = () => {
             <p>Email: {email}</p>
             <p>Group: {group}</p>
             <p>Role: {role}</p>
-
         </div>
     );
 };

@@ -8,7 +8,15 @@ interface AuthCheckResponse {
         surname: string
         group: string;
         role: string;
-};
+    }
+    teacher: {
+        id: string;
+        name: string;
+        email: string;
+        surname: string
+        group: string;
+        role: string;
+    }
 }
 
 export const authCheck = createApi({
@@ -23,7 +31,13 @@ export const authCheck = createApi({
                 method: 'GET',
             }),
         }),
+        checkTeacherAuth: builder.query<AuthCheckResponse, void>({
+            query: () => ({
+                url: "/auth/teacher/check",
+                method: 'GET',
+            }),
+        }),
     }),
 });
 
-export const { useCheckAuthQuery } = authCheck;
+export const { useCheckAuthQuery, useCheckTeacherAuthQuery } = authCheck;

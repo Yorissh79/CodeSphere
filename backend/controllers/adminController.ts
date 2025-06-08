@@ -1,15 +1,14 @@
 import { Request, Response } from 'express';
-import userModel, {IUser} from "../models/userModel";
 import { z } from 'zod';
 import { generateToken } from "../utils/generateToken";
+import adminModel, {Admin} from "../models/adminModel";
 
-const createUserSchema = z.object({
+const createAdminSchema = z.object({
     name: z.string(),
     email: z.string().email(),
     password: z.string().min(6),
     surname: z.string(),
     role: z.string(),
-    group: z.string()
 });
 
 const loginSchema = z.object({
@@ -17,27 +16,27 @@ const loginSchema = z.object({
     password: z.string().min(6)
 });
 
-export const createUser = async (req: Request, res: Response): Promise<any> => {
-    const result = createUserSchema.safeParse(req.body);
+export const createAdmin = async (req: Request, res: Response): Promise<any> => {
+    const result = createAdminSchema.safeParse(req.body);
+
     if (!result.success) {
         return res.status(400).json({ error: result.error });
     }
 
-    const { name, email, password, surname, role, group } = result.data;
+    const { name, email, password, surname, role} = result.data;
 
-    const existingUser = await userModel.findOne({ email }) as IUser | null;
+    const existingUser = await adminModel.findOne({ email }) as Admin | null;
     if (existingUser) {
         return res.status(400).json({ error: 'User already exists' });
     }
 
-    const newUser = await userModel.create({
+    const newUser = await adminModel.create({
         name,
         email,
         password,
         surname,
         role,
-        group,
-    }) as IUser;
+    }) as Admin;
 
     generateToken(res, newUser._id.toString());
 
@@ -51,7 +50,7 @@ export const createUser = async (req: Request, res: Response): Promise<any> => {
     });
 };
 
-export const loginUser = async (req: Request, res: Response): Promise<any> => {
+export const loginAdmin = async (req: Request, res: Response): Promise<any> => {
     const result = loginSchema.safeParse(req.body);
     if (!result.success) {
         return res.status(400).json({ error: result.error });
@@ -59,7 +58,7 @@ export const loginUser = async (req: Request, res: Response): Promise<any> => {
 
     const { email, password } = result.data;
 
-    const user = await userModel.findOne({ email }) as IUser | null;
+    const user = await adminModel.findOne({ email }) as Admin | null;
     if (!user) {
         return res.status(401).json({ error: 'User not found' });
     }
@@ -91,19 +90,19 @@ export const logout = async (req: Request, res: Response) => {
     res.status(200).json({ message: 'Logged out' });
 };
 
-export const getUser = async (req: Request, res: Response): Promise<any> => {
-    const { id } = req.params;
-    if (id) {
-        const user = await userModel.findById(id).select('name email');
-        if (user) {
-            return res.status(200).json({ id: user._id, name: user.name, email: user.email });
-        }
-        return res.status(404).json({ error: 'User not found' });
-    }
-    return res.status(400).json({ error: 'ID required' });
-};
-
-export const getAllUsers = async (req: Request, res: Response) => {
-    const users = await userModel.find()
-    res.json(users)
-}
+// export const getAdmin = async (req: Request, res: Response): Promise<any> => {
+//     const { id } = req.params;
+//     if (id) {
+//         const user = await adminModel.findById(id).select('name email');
+//         if (user) {
+//             return res.status(200).json({ id: user._id, name: user.name, email: user.email });
+//         }
+//         return res.status(404).json({ error: 'User not found' });
+//     }
+//     return res.status(400).json({ error: 'ID required' });
+// };
+//
+// export const getAllUsers = async (req: Request, res: Response) => {
+//     const users = await adminModel.find()
+//     res.json(users)
+// }

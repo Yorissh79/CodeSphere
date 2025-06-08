@@ -1,8 +1,8 @@
 import jwt from "jsonwebtoken";
 import { Request, Response } from "express";
-import userModel from "../models/userModel";
+import adminModel from "../models/adminModel";
 
-export const checkAuth = async (req: Request, res: Response): Promise<any> => {
+export const checkAdminAuth = async (req: Request, res: Response): Promise<any> => {
     const token = req.cookies.jwt;
 
     if (!token) {
@@ -12,7 +12,7 @@ export const checkAuth = async (req: Request, res: Response): Promise<any> => {
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { id: string };
 
-        const user = await userModel.findById(decoded.id).select("-password");
+        const user = await adminModel.findById(decoded.id).select("-password");
 
         if (!user) {
             return res.status(401).json({ error: "User not found" });
