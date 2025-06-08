@@ -1,7 +1,7 @@
 import image from '../../assets/Codesphere_icon.png'
 import {useState} from "react";
 import {Link, useNavigate} from "react-router-dom";
-import {useUserSignupMutation} from "../../services/userApi.ts";
+import {useTeacherSignupMutation} from "../../services/teacherApi.ts";
 
 const Signup = () => {
 
@@ -11,7 +11,7 @@ const Signup = () => {
     const [surname, setSurname] = useState('');
     const [password, setPassword] = useState('');
 
-    const [createPost, { isLoading, error }] = useUserSignupMutation();
+    const [createPost, { isLoading, error }] = useTeacherSignupMutation();
 
     const signUp = async (e: React.FormEvent) => {
         e.preventDefault();

@@ -12,7 +12,7 @@ const Login = () => {
 
     const login = async (e: React.FormEvent) => {
         e.preventDefault();
-        const data = await createPost({
+        await createPost({
             email,
             password,
         }).unwrap()

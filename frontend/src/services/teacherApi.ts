@@ -33,15 +33,15 @@ interface SignupResponse {
     };
 }
 
-export const userApi = createApi({
-    reducerPath: 'userApi',
+export const teacherApi = createApi({
+    reducerPath: 'teacherApi',
     baseQuery: fetchBaseQuery({
         baseUrl: 'http://localhost:3001/teacher/',
         credentials: 'include',
     }),
     refetchOnFocus: true,
     endpoints: (builder) => ({
-        userLogin: builder.mutation<LoginResponse, LoginRequest>({
+        teacherLogin: builder.mutation<LoginResponse, LoginRequest>({
             query: (newPost) => ({
                 url: 'login',
                 method: 'POST',
@@ -51,7 +51,7 @@ export const userApi = createApi({
                 body: newPost,
             }),
         }),
-        userSignup: builder.mutation<SignupResponse, SignupRequest>({
+        teacherSignup: builder.mutation<SignupResponse, SignupRequest>({
             query: (newPost) => ({
                 url: 'create',
                 method: 'POST',
@@ -61,7 +61,7 @@ export const userApi = createApi({
                 body: newPost,
             }),
         }),
-        userLogout: builder.mutation<SignupResponse, SignupRequest>({
+        teacherLogout: builder.mutation<SignupResponse, SignupRequest>({
             query: (newPost) => ({
                 url: 'logout',
                 method: 'POST',
@@ -74,4 +74,4 @@ export const userApi = createApi({
     }),
 });
 
-export const { useUserLoginMutation, useUserSignupMutation } = userApi;
+export const { useTeacherLoginMutation, useTeacherSignupMutation, useTeacherLogoutMutation } = teacherApi;
