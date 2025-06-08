@@ -62,16 +62,14 @@ export const userApi = createApi({
                 body: newPost,
             }),
         }),
-        userLogout: builder.mutation<SignupResponse, SignupRequest>({
-            query: (newPost) => ({
+        userLogout: builder.mutation<void, void>({
+            query: () => ({
                 url: 'logout',
                 method: 'POST',
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: newPost,
+                credentials: 'include',
             }),
         }),
+
     }),
 });
 

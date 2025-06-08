@@ -61,14 +61,11 @@ export const teacherApi = createApi({
                 body: newPost,
             }),
         }),
-        teacherLogout: builder.mutation<SignupResponse, SignupRequest>({
-            query: (newPost) => ({
+        teacherLogout: builder.mutation<void, void>({
+            query: () => ({
                 url: 'logout',
                 method: 'POST',
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: newPost,
+                credentials: 'include',
             }),
         }),
     }),
