@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import {useNavigate} from "react-router-dom";
 import { useEffect } from "react";
 import {useCheckAuthQuery} from "../../services/authCheck.ts";
 
@@ -12,20 +12,36 @@ interface User {
 }
 
 export default function AppLayout() {
+
     const { data, error, isLoading } = useCheckAuthQuery();
     const navigate = useNavigate();
 
     const user: User | undefined = data?.user;
 
     useEffect(() => {
-        if (error) {
-            navigate("/registration/login", { replace: true });
-        } else if (data) {
-            navigate("/student", { replace: true });
-        }
+
+        const handleAuthCheck = async () => {
+            if (isLoading) {
+                return;
+            }
+
+            if (error) {
+                navigate("/registration/login", { replace: true });
+            } else if (user?.role === "student") {
+                navigate("/dashboard/student", { replace: true });
+            }
+        };
+
+        handleAuthCheck()
+
     }, [isLoading, error, data, navigate, user]);
 
-    if (isLoading) return <div>Loading...</div>;
-
+    if (isLoading) {
+        return (
+            <div className="flex justify-center items-center h-screen font-sans text-xl text-gray-600">
+                Loading...
+            </div>
+        );
+    }
     return null;
 }

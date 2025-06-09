@@ -1,15 +1,29 @@
 import { useCheckAuthQuery } from "../../../services/authCheck.ts";
 import {useEffect} from "react";
+import {Link} from "react-router-dom";
 
 const Home = () => {
-    const { data, error, isLoading, refetch } = useCheckAuthQuery();
+    const { data, error, isLoading, refetch, isError } = useCheckAuthQuery();
 
     useEffect(() => {
         refetch();
     }, [])
 
     if (isLoading) return <p>Loading...</p>;
-    if (error || !data?.user) return <p>Error</p>;
+    if (error || !data?.user || isError)
+
+         return (
+            <div className="flex justify-center items-center h-screen font-sans text-xl text-gray-600">
+                <div className="text-xl text-gray-600">
+                    Unauthorized access token.
+                </div>
+
+                <div className="text-xl text-gray-600">
+                    <Link to={"/registration/login"} >Go login page</Link>
+                </div>
+            </div>
+        );
+
 
     const { name, surname, email, group, role } = data.user;
 

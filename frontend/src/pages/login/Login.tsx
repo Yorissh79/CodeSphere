@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useUserLoginMutation } from "../../services/userApi.ts";
 import { useTeacherLoginMutation } from "../../services/teacherApi.ts";
 import image from "../../assets/Codesphere_icon.png";
+import { Eye, EyeOff } from 'lucide-react';
 
 const Login = () => {
     const navigate = useNavigate();
@@ -11,6 +12,7 @@ const Login = () => {
     const [isTeacher, setIsTeacher] = useState(false);
     const [userLogin, { isLoading: userLoading, error: userError }] = useUserLoginMutation();
     const [teacherLogin, { isLoading: teacherLoading, error: teacherError }] = useTeacherLoginMutation();
+    const [showPassword, setShowPassword] = useState(false);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -65,20 +67,27 @@ const Login = () => {
                     </div>
 
                     <div>
-                        <label htmlFor="password" className="block text-sm font-medium text-gray-900 dark:text-gray-100">
+                        <label htmlFor="password" className="block text-sm font-medium text-gray-900 dark:text-white">
                             Password
                         </label>
-                        <div className="mt-2">
+                        <div className="mt-2 relative">
                             <input
                                 id="password"
                                 name="password"
-                                type="password"
+                                type={showPassword ? "text" : "password"}
                                 required
-                                autoComplete="current-password"
-                                value={password}
+                                autoComplete="new-password"
+                                className="block w-full pr-10 rounded-md bg-white dark:bg-gray-800 px-3 py-1.5 text-base text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 border border-black dark:border-gray-600 focus:outline-indigo-600 sm:text-sm"
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="block w-full rounded-md bg-white dark:bg-gray-800 px-3 py-1.5 text-base text-gray-900 dark:text-gray-100 border-2 border-solid border-black dark:border-gray-600 placeholder:text-gray-400 focus:outline-2 focus:outline-offset-2 focus:outline-indigo-600 sm:text-sm"
                             />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-600 dark:text-gray-300"
+                                tabIndex={-1}
+                            >
+                                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                            </button>
                         </div>
                     </div>
 

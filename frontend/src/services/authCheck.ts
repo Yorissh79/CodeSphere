@@ -17,6 +17,13 @@ interface AuthCheckResponse {
         group: string;
         role: string;
     }
+    admin: {
+        id: string;
+        name: string;
+        email: string;
+        surname: string
+        role: string;
+    }
 }
 
 export const authCheck = createApi({
@@ -37,7 +44,13 @@ export const authCheck = createApi({
                 method: 'GET',
             }),
         }),
+        checkAdminAuth: builder.query<AuthCheckResponse, void>({
+            query: () => ({
+                url: "/auth/admin/check",
+                method: 'GET',
+            }),
+        }),
     }),
 });
 
-export const { useCheckAuthQuery, useCheckTeacherAuthQuery } = authCheck;
+export const { useCheckAuthQuery, useCheckTeacherAuthQuery, useCheckAdminAuthQuery } = authCheck;
