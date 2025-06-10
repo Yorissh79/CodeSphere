@@ -5,13 +5,16 @@ import {RouterProvider} from "react-router-dom";
 import {router} from "./router/router.ts";
 import {Provider} from "react-redux";
 import {store} from "./store/store.ts";
+import {HelmetProvider} from "react-helmet-async";
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-      <Provider store={store}>
-          <RouterProvider router={router}>
+      <HelmetProvider>
+          <Provider store={store}>
+              <RouterProvider router={router}>
 
-          </RouterProvider>
-      </Provider>
+              </RouterProvider>
+          </Provider>
+      </HelmetProvider>
   </StrictMode>,
 )

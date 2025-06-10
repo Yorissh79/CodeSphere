@@ -25,7 +25,23 @@ export const router = createBrowserRouter([
             {
                 path: "/",
                 Component: F
-            }
+            },
+            {
+                path: '/pp',
+                Component: PP
+            },
+            {
+                path: '/about',
+                Component: About
+            },
+            {
+                path: '/contact',
+                Component: Contact
+            },
+            {
+                path: '/faq',
+                Component: Faq
+            },
         ]
     },
     {
@@ -76,20 +92,5 @@ export const router = createBrowserRouter([
         path: "*",
         Component: NotFound
     },
-    {
-        path: '/pp',
-        Component: PP
-    },
-    {
-        path: '/about',
-        Component: About
-    },
-    {
-        path: '/contact',
-        Component: Contact
-    },
-    {
-        path: '/faq',
-        Component: Faq
-    },
+
 ])
