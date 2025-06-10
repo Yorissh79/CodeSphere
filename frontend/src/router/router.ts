@@ -16,6 +16,7 @@ import signupTeacher from "../pages/signup/SignupTeacher.tsx";
 import SignLayout from "../components/signlayout/SignLayout.tsx";
 import TeacherAppLayout from "../pages/auth/TeacherAuth.tsx";
 import AdminAuth from "../pages/auth/AdminAuth.tsx";
+import CompleteSignup from "../pages/signup/CompleteSignup.tsx";
 
 export const router = createBrowserRouter([
     {
@@ -59,7 +60,19 @@ export const router = createBrowserRouter([
             {
                 path: "/registration/login",
                 Component: Login
-            }
+            },
+            {
+                path: '/registration/complete-signup',
+                Component: CompleteSignup,
+            },
+            // {
+            //     path: '/profile',
+            //     element: <Profile />,
+            // },
+            // {
+            //     path: '/auth/google/callback',
+            //     element: <GoogleCallback />,
+            // },
         ]
     },
     {

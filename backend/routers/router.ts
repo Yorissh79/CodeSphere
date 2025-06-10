@@ -5,6 +5,7 @@ import {createTeacher, loginTeacher, logoutTeacher} from "../controllers/teacher
 import {checkTeacherAuth} from "../controllers/teacherAuthController";
 import {createAdmin, loginAdmin} from "../controllers/adminController";
 import {checkAdminAuth} from "../controllers/adminAuthController";
+import {authedGoogle, createGoogle, loginGoogle, logoutGoogle, registerGoogle} from "../controllers/googleController";
 
 const router = express.Router();
 
@@ -25,5 +26,13 @@ router
     .post("/admin/login", loginAdmin)
     .post("/admin/logout", loginAdmin)
     .get("/auth/admin/check", checkAdminAuth)
+
+    .post("/gUser", createGoogle)
+    .post("register", registerGoogle)
+    .post("/login", loginGoogle)
+    .post("/logout", logoutGoogle)
+    .get("/gUser/check", authedGoogle)
+
+
 
 export default router;

@@ -19,7 +19,8 @@ interface SignupRequest {
     name: string;
     group: string;
     email: string;
-    password: string;
+    password?: string;
+    googleId?: string;
     surname: string;
     role: string;
 }

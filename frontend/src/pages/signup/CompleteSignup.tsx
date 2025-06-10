@@ -1,56 +1,38 @@
 import image from '../../assets/Codesphere_icon.png';
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useUserSignupMutation } from '../../services/userApi';
-import { GoogleLogin } from '@react-oauth/google';
-import { Eye, EyeOff } from 'lucide-react';
-import { jwtDecode } from 'jwt-decode';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import {useUserCreateMutation} from "../../services/googleApi.ts";
 
-interface GoogleCredential {
-    sub: string; // Google ID
-    name: string;
-    email: string;
-}
-
-const Signup = () => {
+const CompleteSignup = () => {
     const navigate = useNavigate();
-    const [email, setEmail] = useState('');
-    const [name, setName] = useState('');
+    const location = useLocation();
+    const { googleId, name: googleName, email: googleEmail } = location.state || {};
+    const [name, setName] = useState(googleName || '');
+    const [email, setEmail] = useState(googleEmail || '');
     const [surname, setSurname] = useState('');
-    const [password, setPassword] = useState('');
     const [group, setGroup] = useState('');
-    const [showPassword, setShowPassword] = useState(false);
-    const [createPost, { isLoading, error }] = useUserSignupMutation();
+    const [createPost, { isLoading, error }] = useUserCreateMutation();
 
-    // Password-based signup
-    const signUp = async (e: React.FormEvent) => {
+    // Submit form with Google and additional data
+    const completeSignup = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!googleId) {
+            console.error('Google Auth data missing');
+            navigate('/registration/signup');
+            return;
+        }
         try {
             await createPost({
                 email,
                 name,
                 surname,
-                password,
+                googleId,
                 group,
                 role: 'student',
             }).unwrap();
             navigate('/registration/login');
         } catch (err) {
-            console.error('Signup error:', err);
-        }
-    };
-
-    // Google Auth: Redirect to CompleteSignup with Google data
-    const handleGoogleSuccess = (credentialResponse: { credential?: string }) => {
-        if (credentialResponse.credential) {
-            const decoded: GoogleCredential = jwtDecode(credentialResponse.credential);
-            navigate('/registration/complete-signup', {
-                state: {
-                    googleId: decoded.sub,
-                    name: decoded.name,
-                    email: decoded.email,
-                },
-            });
+            console.error('Complete signup error:', err);
         }
     };
 
@@ -59,18 +41,18 @@ const Signup = () => {
             <div className="sm:mx-auto sm:w-full sm:max-w-sm">
                 <img alt="Your Company" src={image} className="mx-auto h-48 w-auto" />
                 <h2 className="mt-10 text-center text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
-                    Sign up to an account
+                    Complete Your Signup
                 </h2>
             </div>
 
             <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
                 {error && (
                     <p className="text-red-500 text-sm mb-4">
-                        There was an error creating the account
+                        There was an error completing the signup
                     </p>
                 )}
 
-                <form onSubmit={signUp} className="space-y-6">
+                <form onSubmit={completeSignup} className="space-y-6">
                     {/* Name */}
                     <div>
                         <label htmlFor="name" className="block text-sm font-medium text-gray-900 dark:text-white">
@@ -86,6 +68,26 @@ const Signup = () => {
                                 className="block w-full rounded-md bg-white dark:bg-gray-800 px-3 py-1.5 text-base text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 border border-black dark:border-gray-600 focus:outline-indigo-600 sm:text-sm"
                                 onChange={(e) => setName(e.target.value)}
                                 value={name}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Email */}
+                    <div>
+                        <label htmlFor="email" className="block text-sm font-medium text-gray-900 dark:text-white">
+                            Email address
+                        </label>
+                        <div className="mt-2">
+                            <input
+                                id="email"
+                                name="email"
+                                type="email"
+                                required
+                                autoComplete="email"
+                                className="block w-full rounded-md bg-white dark:bg-gray-800 px-3 py-1.5 text-base text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 border border-black dark:border-gray-600 focus:outline-indigo-600 sm:text-sm"
+                                onChange={(e) => setEmail(e.target.value)}
+                                value={email}
+                                disabled
                             />
                         </div>
                     </div>
@@ -128,52 +130,6 @@ const Signup = () => {
                         </div>
                     </div>
 
-                    {/* Email */}
-                    <div>
-                        <label htmlFor="email" className="block text-sm font-medium text-gray-900 dark:text-white">
-                            Email address
-                        </label>
-                        <div className="mt-2">
-                            <input
-                                id="email"
-                                name="email"
-                                type="email"
-                                required
-                                autoComplete="email"
-                                className="block w-full rounded-md bg-white dark:bg-gray-800 px-3 py-1.5 text-base text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 border border-black dark:border-gray-600 focus:outline-indigo-600 sm:text-sm"
-                                onChange={(e) => setEmail(e.target.value)}
-                                value={email}
-                            />
-                        </div>
-                    </div>
-
-                    {/* Password */}
-                    <div>
-                        <label htmlFor="password" className="block text-sm font-medium text-gray-900 dark:text-white">
-                            Password
-                        </label>
-                        <div className="mt-2 relative">
-                            <input
-                                id="password"
-                                name="password"
-                                type={showPassword ? 'text' : 'password'}
-                                required
-                                autoComplete="new-password"
-                                className="block w-full pr-10 rounded-md bg-white dark:bg-gray-800 px-3 py-1.5 text-base text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 border border-black dark:border-gray-600 focus:outline-indigo-600 sm:text-sm"
-                                onChange={(e) => setPassword(e.target.value)}
-                                value={password}
-                            />
-                            <button
-                                type="button"
-                                onClick={() => setShowPassword(!showPassword)}
-                                className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-600 dark:text-gray-300"
-                                tabIndex={-1}
-                            >
-                                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                            </button>
-                        </div>
-                    </div>
-
                     {/* Submit */}
                     <div>
                         <button
@@ -181,20 +137,10 @@ const Signup = () => {
                             className="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
                             disabled={isLoading}
                         >
-                            {isLoading ? 'Signing up...' : 'Signup'}
+                            {isLoading ? 'Completing Signup...' : 'Complete Signup'}
                         </button>
                     </div>
                 </form>
-
-                {/* Google Sign-In Button */}
-                <div className="mt-4">
-                    <GoogleLogin
-                        onSuccess={handleGoogleSuccess}
-                        onError={() => console.error('Google Sign-In Failed')}
-                        text="signup_with"
-                        width="350"
-                    />
-                </div>
 
                 {/* Redirect to Login */}
                 <div className="flex items-center justify-center mt-4">
@@ -210,4 +156,4 @@ const Signup = () => {
     );
 };
 
-export default Signup;
+export default CompleteSignup;

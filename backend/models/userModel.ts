@@ -6,9 +6,10 @@ export interface IUser extends Document {
     name: string;
     email: string;
     password: string;
-    surname: string;
+    surname?: string;
     role: string;
     group?: string;
+    googleId?: string;
     passwordControl(password: string): Promise<boolean>;
 }
 
@@ -16,10 +17,11 @@ const userSchema: Schema<IUser> = new Schema(
     {
         name: { type: String, required: true },
         email: { type: String, required: true, unique: true },
-        password: { type: String, required: true },
-        surname: { type: String, required: true },
+        password: { type: String, required: false },
+        surname: { type: String, required: false },
         role: { type: String, required: true },
         group: { type: String, required: false },
+        googleId: { type: String, required: false },
     },
     { timestamps: true }
 );

@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useTeacherSignupMutation } from "../../services/teacherApi.ts";
 import { Eye, EyeOff } from 'lucide-react';
 
-const Signup = () => {
+const signupTeacher = () => {
     const navigate = useNavigate();
     const [email, setEmail] = useState('');
     const [name, setName] = useState('');
@@ -144,4 +144,4 @@ const Signup = () => {
     );
 };
 
-export default Signup;
+export default signupTeacher;
