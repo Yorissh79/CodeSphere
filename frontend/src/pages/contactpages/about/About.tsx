@@ -1,4 +1,3 @@
-import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 
@@ -24,14 +23,11 @@ const imageVariant = {
 const About = () => {
     return (
         <div className="min-h-screen py-16 px-6 bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 text-gray-900 dark:text-white">
-
-            <Helmet>
                 <title>About Codesphere - Modern Collaborative Coding Platform</title>
                 <meta
                     name="description"
                     content="Learn about Codesphere, a platform that connects students and educators with a modern, collaborative coding environment."
                 />
-            </Helmet>
 
             <div className="max-w-5xl mx-auto space-y-20">
 

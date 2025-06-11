@@ -5,7 +5,6 @@ import { RouterProvider } from 'react-router-dom';
 import { router } from './router/router';
 import { Provider } from 'react-redux';
 import { store } from './store/store';
-import { HelmetProvider } from 'react-helmet-async';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 
 // Ensure environment variable is set
@@ -16,12 +15,10 @@ if (!googleClientId) {
 
 createRoot(document.getElementById('root')!).render(
     <StrictMode>
-        <HelmetProvider>
             <GoogleOAuthProvider clientId={googleClientId || ''}>
                 <Provider store={store}>
                     <RouterProvider router={router} />
                 </Provider>
             </GoogleOAuthProvider>
-        </HelmetProvider>
     </StrictMode>
 );
