@@ -81,7 +81,7 @@ export const loginAdmin = async (req: Request, res: Response): Promise<any> => {
     });
 };
 
-export const logout = async (req: Request, res: Response) => {
+export const logoutAdmin = async (req: Request, res: Response) => {
     res.cookie("jwt", "", {
         httpOnly: true,
         expires: new Date(0),

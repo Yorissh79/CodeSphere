@@ -28,7 +28,7 @@ export default function TeacherAuth() {
             if (error) {
                 navigate("/registration/login", { replace: true });
             } else if (user?.role === "teacher") {
-                navigate("/dashboard/teacher", { replace: true });
+                navigate("/user/teacher", { replace: true });
             }
         };
 

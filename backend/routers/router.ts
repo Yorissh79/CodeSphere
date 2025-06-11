@@ -1,38 +1,63 @@
 import express from "express";
-import {createUser, getAllUsers, getUser, loginUser, logout} from "../controllers/userController";
-import {checkAuth} from "../controllers/authController";
-import {createTeacher, loginTeacher, logoutTeacher} from "../controllers/teacherController";
-import {checkTeacherAuth} from "../controllers/teacherAuthController";
-import {createAdmin, loginAdmin} from "../controllers/adminController";
-import {checkAdminAuth} from "../controllers/adminAuthController";
-import {authedGoogle, createGoogle, loginGoogle, logoutGoogle, registerGoogle} from "../controllers/googleController";
+import {
+    createUser,
+    deleteUser,
+    getAllUsers,
+    getUser,
+    loginUser,
+    logout,
+    updateUser
+} from "../controllers/userController";
+import { checkAuth } from "../controllers/authController";
+import {
+    createTeacher,
+    loginTeacher,
+    logoutTeacher
+} from "../controllers/teacherController";
+import { checkTeacherAuth } from "../controllers/teacherAuthController";
+import {
+    createAdmin,
+    loginAdmin,
+    logoutAdmin
+} from "../controllers/adminController";
+import { checkAdminAuth } from "../controllers/adminAuthController";
+import {
+    authedGoogle,
+    createGoogle,
+    loginGoogle,
+    logoutGoogle,
+    registerGoogle
+} from "../controllers/googleController";
 
 const router = express.Router();
 
-router
-    .post("/user/create", createUser)
-    // .get("/user/gets", getAllUsers)
-    .get("/user/get/:id", getUser)
-    .get("/auth/check", checkAuth)
-    .post("/user/login", loginUser)
-    .post("/user/logout", logout)
+// User Routes
+router.post("/user/create", createUser);
+router.get("/user/gets", getAllUsers);
+router.get("/user/get/:id", getUser);
+router.post("/user/login", loginUser);
+router.post("/user/logout", logout);
+router.put("/user/update/:id", updateUser);
+router.delete("/user/delete/:id", deleteUser);
+router.get("/auth/check", checkAuth);
 
-    .post("/teacher/create", createTeacher)
-    .post("/teacher/login", loginTeacher)
-    .post("/teacher/logout", logoutTeacher)
-    .get("/auth/teacher/check", checkTeacherAuth)
+// Teacher Routes
+router.post("/teacher/create", createTeacher);
+router.post("/teacher/login", loginTeacher);
+router.post("/teacher/logout", logoutTeacher);
+router.get("/auth/teacher/check", checkTeacherAuth);
 
-    .post("/admin/create", createAdmin)
-    .post("/admin/login", loginAdmin)
-    .post("/admin/logout", loginAdmin)
-    .get("/auth/admin/check", checkAdminAuth)
+// Admin Routes
+router.post("/admin/create", createAdmin);
+router.post("/admin/login", loginAdmin);
+router.post("/admin/logout", logoutAdmin);
+router.get("/auth/admin/check", checkAdminAuth);
 
-    .post("/gUser", createGoogle)
-    .post("register", registerGoogle)
-    .post("/login", loginGoogle)
-    .post("/logout", logoutGoogle)
-    .get("/gUser/check", authedGoogle)
-
-
+// Google Auth Routes
+router.post("/gUser", createGoogle);
+router.post("/register", registerGoogle);
+router.post("/login", loginGoogle);
+router.post("/logout", logoutGoogle);
+router.get("/gUser/check", authedGoogle);
 
 export default router;

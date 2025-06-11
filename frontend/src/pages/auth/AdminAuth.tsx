@@ -27,7 +27,7 @@ export default function AdminAuth() {
             if (error) {
                 navigate("/registration/login", { replace: true });
             } else if (user?.role === "admin") {
-                navigate("/dashboard/admin", { replace: true });
+                navigate("/user/admin", { replace: true });
             }
         };
 

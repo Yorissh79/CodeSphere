@@ -1,6 +1,7 @@
-import {createBrowserRouter} from "react-router-dom";
+import { createBrowserRouter } from "react-router-dom";
 import Layout from "../components/layout/Layout.tsx";
 import Signup from "../pages/signup/Signup.tsx";
+import SignupTeacher from "../pages/signup/SignupTeacher.tsx";
 import Login from "../pages/login/Login.tsx";
 import NotFound from "../pages/notfound/NotFound.tsx";
 import Home from "../pages/student/home/Home.tsx";
@@ -12,14 +13,16 @@ import Contact from "../pages/contactpages/contact/Contact.tsx";
 import Faq from "../pages/contactpages/faq/Faq.tsx";
 import AppLayout from "../pages/auth/Auth.tsx";
 import StudentLayout from "../components/studentLayout/StudentLayout.tsx";
-import signupTeacher from "../pages/signup/SignupTeacher.tsx";
 import SignLayout from "../components/signlayout/SignLayout.tsx";
 import TeacherAppLayout from "../pages/auth/TeacherAuth.tsx";
 import AdminAuth from "../pages/auth/AdminAuth.tsx";
 import CompleteSignup from "../pages/signup/CompleteSignup.tsx";
 import TeacherLayout from "../components/teacherlayout/TeacherLayout.tsx";
 import AdminLayout from "../components/adminlayout/AdminLayout.tsx";
-import Admin from "../pages/admin/Admin.tsx";
+import Admin from "../pages/admin/home/Admin.tsx";
+import Students from "../pages/admin/students/Students.tsx";
+// import Teachers from "../pages/admin/teachers/Teachers.tsx";
+// import Dashboard from "../pages/admin/dashboard/Dashboard.tsx";
 
 export const router = createBrowserRouter([
     {
@@ -31,19 +34,19 @@ export const router = createBrowserRouter([
                 Component: F
             },
             {
-                path: '/pp',
+                path: "pp",
                 Component: PP
             },
             {
-                path: '/about',
+                path: "about",
                 Component: About
             },
             {
-                path: '/contact',
+                path: "contact",
                 Component: Contact
             },
             {
-                path: '/faq',
+                path: "faq",
                 Component: Faq
             },
         ]
@@ -53,62 +56,66 @@ export const router = createBrowserRouter([
         Component: SignLayout,
         children: [
             {
-                path: "/registration/signup",
+                path: "signup",
                 Component: Signup
             },
             {
-                path: "/registration/teacher/signup",
-                Component: signupTeacher
+                path: "teacher/signup",
+                Component: SignupTeacher
             },
             {
-                path: "/registration/login",
+                path: "login",
                 Component: Login
             },
             {
-                path: '/registration/complete-signup',
-                Component: CompleteSignup,
+                path: "complete-signup",
+                Component: CompleteSignup
             },
-            // {
-            //     path: '/profile',
-            //     element: <Profile />,
-            // },
-            // {
-            //     path: '/auth/google/callback',
-            //     element: <GoogleCallback />,
-            // },
         ]
     },
     {
-        path: '/dashboard',
+        path: '/user',
         children: [
             {
-                path: "/dashboard/student",
+                path: "student",
                 Component: StudentLayout,
                 children: [
                     {
-                        path: "/dashboard/student",
-                        Component: Home,
+                        path: "",
+                        Component: Home
                     }
                 ]
             },
             {
-                path: "/dashboard/teacher",
+                path: "teacher",
                 Component: TeacherLayout,
                 children: [
                     {
-                        path: "/dashboard/teacher",
-                        Component: Homet,
+                        path: "",
+                        Component: Homet
                     }
                 ]
             },
             {
-                path: "/dashboard/admin",
+                path: "admin",
                 Component: AdminLayout,
                 children: [
                     {
-                        path: "/dashboard/admin",
-                        Component: Admin,
-                    }
+                        path: "",
+                        Component: Admin
+                    },
+                    {
+                        path: "students",
+                        Component: Students
+                    },
+                    // {
+                    //     path: "teachers",
+                    //     Component: Teachers
+                    // },
+                    // {
+                    //     path: "dashboard",
+                    //     Component: Dashboard
+                    // }
                 ]
             },
         ]
@@ -117,15 +124,15 @@ export const router = createBrowserRouter([
         path: '/check',
         children: [
             {
-                path: '/check/student',
+                path: "student",
                 Component: AppLayout
             },
             {
-                path: '/check/teacher',
+                path: "teacher",
                 Component: TeacherAppLayout
             },
             {
-                path: '/check/admin',
+                path: "admin",
                 Component: AdminAuth
             },
         ]
@@ -134,5 +141,4 @@ export const router = createBrowserRouter([
         path: "*",
         Component: NotFound
     },
-
-])
+]);

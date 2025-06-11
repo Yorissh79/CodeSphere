@@ -17,6 +17,14 @@ const loginSchema = z.object({
     password: z.string().min(6)
 });
 
+const updateUserSchema = z.object({
+    name: z.string().optional(),
+    email: z.string().email().optional(),
+    surname: z.string().optional(),
+    role: z.string().optional(),
+    group: z.string().optional(),
+});
+
 export const createUser = async (req: Request, res: Response): Promise<any> => {
     const result = createUserSchema.safeParse(req.body);
     if (!result.success) {
@@ -104,6 +112,72 @@ export const getUser = async (req: Request, res: Response): Promise<any> => {
 };
 
 export const getAllUsers = async (req: Request, res: Response) => {
-    const users = await userModel.find()
-    res.json(users)
-}
+    const { group, name } = req.query;
+
+    const filter: any = {};
+
+    if (group && typeof group === 'string') {
+        filter.group = group;
+    }
+
+    if (name && typeof name === 'string') {
+        filter.$or = [
+            { name: { $regex: name, $options: 'i' } },
+            { surname: { $regex: name, $options: 'i' } }
+        ];
+    }
+
+    try {
+        const users = await userModel.find(filter).select('name surname email group role');
+        res.json(users);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch users' });
+    }
+};
+
+
+export const updateUser = async (req: Request, res: Response): Promise<any> => {
+    const { id } = req.params;
+    const result = updateUserSchema.safeParse(req.body);
+    if (!result.success) {
+        return res.status(400).json({ error: result.error });
+    }
+
+    const user = await userModel.findById(id) as IUser | null;
+    if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+    }
+
+    const updatedUser = await userModel.findByIdAndUpdate(
+        id,
+        { $set: result.data },
+        { new: true, runValidators: true }
+    ).select('name surname email group role');
+
+    if (!updatedUser) {
+        return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.status(200).json({
+        message: 'User updated successfully',
+        user: {
+            id: updatedUser._id,
+            name: updatedUser.name,
+            surname: updatedUser.surname,
+            email: updatedUser.email,
+            group: updatedUser.group,
+            role: updatedUser.role,
+        },
+    });
+};
+
+export const deleteUser = async (req: Request, res: Response): Promise<any> => {
+    const { id } = req.params;
+
+    const user = await userModel.findByIdAndDelete(id);
+    if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.status(200).json({ message: 'User deleted successfully', user });
+};

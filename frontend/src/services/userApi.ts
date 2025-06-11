@@ -5,6 +5,15 @@ interface LoginRequest {
     password: string;
 }
 
+interface User {
+    _id: string;
+    name: string;
+    surname: string;
+    email: string;
+    group: string;
+    role: string;
+}
+
 interface LoginResponse {
     message: string;
     token?: string;
@@ -32,6 +41,27 @@ interface SignupResponse {
         id: string;
         name: string;
         email: string;
+    };
+}
+
+interface UpdateUserRequest {
+    _id: string;
+    name?: string;
+    surname?: string;
+    email?: string;
+    group?: string;
+    role?: string;
+}
+
+interface UpdateUserResponse {
+    message: string;
+    user: {
+        id: string;
+        name: string;
+        surname: string;
+        email: string;
+        group: string;
+        role: string;
     };
 }
 
@@ -70,8 +100,30 @@ export const userApi = createApi({
                 credentials: 'include',
             }),
         }),
+        getAllUsers: builder.query({
+            query: (params = {}) => {
+                const queryString = new URLSearchParams(params).toString();
+                return `/gets?${queryString}`;
+            },
+        }),
+        updateUser: builder.mutation<UpdateUserResponse, UpdateUserRequest>({
+            query: ({ _id, ...data }) => ({
+                url: `update/${_id}`,
+                method: 'PUT',
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: data,
+            }),
+        }),
+        deleteUser: builder.mutation<{ message: string; user: User }, string>({
+            query: (id) => ({
+                url: `/delete/${id}`,
+                method: 'DELETE',
+            }),
+        }),
 
     }),
 });
 
-export const { useUserLoginMutation, useUserSignupMutation, useUserLogoutMutation } = userApi;
+export const { useUserLoginMutation, useUserSignupMutation, useUserLogoutMutation, useGetAllUsersQuery, useUpdateUserMutation, useDeleteUserMutation } = userApi;

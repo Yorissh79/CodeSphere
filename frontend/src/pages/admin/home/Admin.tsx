@@ -1,6 +1,6 @@
 import {useEffect} from "react";
 import {Link} from "react-router-dom";
-import {useCheckAdminAuthQuery} from "../../services/authCheck.ts";
+import {useCheckAdminAuthQuery} from "../../../services/authCheck.ts";
 
 const Admin = () => {
     const { data, error, isLoading, refetch, isError } = useCheckAdminAuthQuery();

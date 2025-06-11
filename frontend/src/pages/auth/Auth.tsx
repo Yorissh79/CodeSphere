@@ -28,7 +28,7 @@ export default function AppLayout() {
             if (error) {
                 navigate("/registration/login", { replace: true });
             } else if (user?.role === "student") {
-                navigate("/dashboard/student", { replace: true });
+                navigate("/user/student", { replace: true });
             }
         };
 
