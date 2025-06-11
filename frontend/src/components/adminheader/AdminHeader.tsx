@@ -67,8 +67,14 @@ const AdminHeader = () => {
                         >
                             <BookOpen className="w-4 h-4" /> Courses
                         </Link>
+                        <Link
+                            to="/user/admin/groups"
+                            className="flex items-center gap-1 text-gray-800 dark:text-gray-200 hover:text-indigo-600 transition"
+                        >
+                            <Users className="w-4 h-4" /> Groups
+                        </Link>
                     </nav>
-
+                    
                     <div className="flex items-center gap-4">
                         {/* Dark Mode Toggle Switch */}
                         <button

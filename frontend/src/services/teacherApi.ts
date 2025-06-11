@@ -15,6 +15,14 @@ interface LoginResponse {
     };
 }
 
+interface Teacher {
+    _id: string;
+    name: string;
+    surname: string;
+    email: string;
+    role: string;
+}
+
 interface SignupRequest {
     name: string;
     email: string;
@@ -30,6 +38,25 @@ interface SignupResponse {
         id: string;
         name: string;
         email: string;
+    };
+}
+
+interface UpdateTeacherRequest {
+    _id: string;
+    name?: string;
+    surname?: string;
+    email?: string;
+    role?: string;
+}
+
+interface UpdateTeacherResponse {
+    message: string;
+    user: {
+        id: string;
+        name: string;
+        surname: string;
+        email: string;
+        role: string;
     };
 }
 
@@ -68,7 +95,29 @@ export const teacherApi = createApi({
                 credentials: 'include',
             }),
         }),
+        getAllTeachers: builder.query({
+            query: (params = {}) => {
+                const queryString = new URLSearchParams(params).toString();
+                return `/gets?${queryString}`;
+            },
+        }),
+        updateTeacher: builder.mutation<UpdateTeacherResponse, UpdateTeacherRequest>({
+            query: ({ _id, ...data }) => ({
+                url: `update/${_id}`,
+                method: 'PUT',
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: data,
+            }),
+        }),
+        deleteTeacher: builder.mutation<{ message: string; user: Teacher }, string>({
+            query: (id) => ({
+                url: `/delete/${id}`,
+                method: 'DELETE',
+            }),
+        }),
     }),
 });
 
-export const { useTeacherLoginMutation, useTeacherSignupMutation, useTeacherLogoutMutation } = teacherApi;
+export const { useTeacherLoginMutation, useTeacherSignupMutation, useTeacherLogoutMutation, useGetAllTeachersQuery, useUpdateTeacherMutation, useDeleteTeacherMutation } = teacherApi;

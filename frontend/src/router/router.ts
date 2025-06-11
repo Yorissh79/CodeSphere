@@ -21,6 +21,7 @@ import TeacherLayout from "../components/teacherlayout/TeacherLayout.tsx";
 import AdminLayout from "../components/adminlayout/AdminLayout.tsx";
 import Admin from "../pages/admin/home/Admin.tsx";
 import Students from "../pages/admin/students/Students.tsx";
+import Teachers from "../pages/admin/teachers/Teachers.tsx";
 // import Teachers from "../pages/admin/teachers/Teachers.tsx";
 // import Dashboard from "../pages/admin/dashboard/Dashboard.tsx";
 
@@ -108,10 +109,10 @@ export const router = createBrowserRouter([
                         path: "students",
                         Component: Students
                     },
-                    // {
-                    //     path: "teachers",
-                    //     Component: Teachers
-                    // },
+                    {
+                        path: "teachers",
+                        Component: Teachers
+                    },
                     // {
                     //     path: "dashboard",
                     //     Component: Dashboard

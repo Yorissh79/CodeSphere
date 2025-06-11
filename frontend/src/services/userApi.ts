@@ -122,7 +122,6 @@ export const userApi = createApi({
                 method: 'DELETE',
             }),
         }),
-
     }),
 });
 

@@ -16,6 +16,13 @@ const loginSchema = z.object({
     password: z.string().min(6)
 });
 
+const teacherUpdateSchema = z.object({
+    name: z.string().optional(),
+    email: z.string().email().optional(),
+    surname: z.string().optional(),
+    role: z.string().optional(),
+});
+
 export const createTeacher = async (req: Request, res: Response): Promise<any> => {
     const result = createTeacherSchema.safeParse(req.body);
     if (!result.success) {
@@ -97,8 +104,71 @@ export const getTeacher = async (req: Request, res: Response): Promise<any> => {
 
     res.status(401).json({ error: 'Unauthorized' });
 };
+export const getAllTeachers = async (req: Request, res: Response) => {
+    const { group, name } = req.query;
 
-export const getAllUsers = async (req: Request, res: Response) => {
-    const users = await teacherModel.find()
-    res.json(users)
-}
+    const filter: any = {};
+
+    if (group && typeof group === 'string') {
+        filter.group = group;
+    }
+
+    if (name && typeof name === 'string') {
+        filter.$or = [
+            { name: { $regex: name, $options: 'i' } },
+            { surname: { $regex: name, $options: 'i' } }
+        ];
+    }
+
+    try {
+        const users = await teacherModel.find(filter).select('name surname email group role');
+        res.json(users);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch users' });
+    }
+};
+
+export const updateTeacher = async (req: Request, res: Response): Promise<any> => {
+    const { id } = req.params;
+    const result = teacherUpdateSchema.safeParse(req.body);
+    if (!result.success) {
+        return res.status(400).json({ error: result.error });
+    }
+
+    const user = await teacherModel.findById(id) as IUser | null;
+    if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+    }
+
+    const updatedUser = await teacherModel.findByIdAndUpdate(
+        id,
+        { $set: result.data },
+        { new: true, runValidators: true }
+    ).select('name surname email group role');
+
+    if (!updatedUser) {
+        return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.status(200).json({
+        message: 'User updated successfully',
+        user: {
+            id: updatedUser._id,
+            name: updatedUser.name,
+            surname: updatedUser.surname,
+            email: updatedUser.email,
+            role: updatedUser.role,
+        },
+    });
+};
+
+export const deleteTeacher = async (req: Request, res: Response): Promise<any> => {
+    const { id } = req.params;
+
+    const user = await teacherModel.findByIdAndDelete(id);
+    if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.status(200).json({ message: 'User deleted successfully', user });
+};

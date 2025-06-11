@@ -10,9 +10,9 @@ import {
 } from "../controllers/userController";
 import { checkAuth } from "../controllers/authController";
 import {
-    createTeacher,
+    createTeacher, deleteTeacher, getAllTeachers,
     loginTeacher,
-    logoutTeacher
+    logoutTeacher, updateTeacher
 } from "../controllers/teacherController";
 import { checkTeacherAuth } from "../controllers/teacherAuthController";
 import {
@@ -46,6 +46,9 @@ router.post("/teacher/create", createTeacher);
 router.post("/teacher/login", loginTeacher);
 router.post("/teacher/logout", logoutTeacher);
 router.get("/auth/teacher/check", checkTeacherAuth);
+router.put("/teacher/update/:id", updateTeacher);
+router.delete("/teacher/delete/:id", deleteTeacher);
+router.get("/teacher/gets", getAllTeachers);
 
 // Admin Routes
 router.post("/admin/create", createAdmin);
