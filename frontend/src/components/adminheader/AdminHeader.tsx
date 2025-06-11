@@ -1,25 +1,26 @@
-import { useUserLogoutMutation } from "../../services/userApi.ts";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useDarkMode } from "../../hooks/useDarkMode.ts";
-import { useCheckAuthQuery } from "../../services/authCheck.ts";
 import { useEffect, useState } from "react";
+import {useAdminLogoutMutation} from "../../services/adminApi.ts";
+import {useCheckAdminAuthQuery} from "../../services/authCheck.ts";
 
-const StudentHeader = () => {
-    const [logoutTrigger, { isLoading: logoutLoading, error: logoutError }] = useUserLogoutMutation();
+const AdminHeader = () => {
+    const [logoutTrigger, { isLoading: logoutLoading, error: logoutError }] = useAdminLogoutMutation();
     const navigate = useNavigate();
     const location = useLocation();
     const { isDark, toggleDarkMode } = useDarkMode();
     const [render, setRender] = useState(false);
 
-    const { data: authData, isError: authError, refetch: refetchAuth } = useCheckAuthQuery();
+    const { data: authData, isError: authError, refetch: refetchAuth } = useCheckAdminAuthQuery();
 
     useEffect(() => {
         const pathSegment = location.pathname.split("/")[2];
 
-        if (pathSegment === "student" && !authError) {
+        if (pathSegment === "admin" && !authError) {
             refetchAuth();
-            if (authData?.user?.role === "student") {
+            if (authData?.user?.role === "admin") {
                 setRender(true);
+                console.log(authData?.user.role);
             } else {
                 setRender(false);
             }
@@ -63,4 +64,4 @@ const StudentHeader = () => {
     );
 };
 
-export default StudentHeader;
+export default AdminHeader;

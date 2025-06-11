@@ -1,12 +1,13 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
-import {useUserGLoginMutation, useUserGTeacherLoginMutation} from "../../services/googleApi";
-import {useUserLoginMutation} from "../../services/userApi";
+import { useUserGLoginMutation, useUserGTeacherLoginMutation } from "../../services/googleApi";
+import { useUserLoginMutation } from "../../services/userApi";
 import image from "../../assets/Codesphere_icon.png";
 import { Eye, EyeOff } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
 import { jwtDecode } from 'jwt-decode';
-import {useTeacherLoginMutation} from "../../services/teacherApi.ts";
+import { useTeacherLoginMutation } from "../../services/teacherApi";
+import { useAdminLoginMutation } from "../../services/adminApi";
 
 interface GoogleCredential {
     sub: string;
@@ -23,11 +24,16 @@ const Login = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [userLogin, { isLoading: userLoading, error: userError }] = useUserLoginMutation();
     const [teacherLogin, { isLoading: teacherLoading, error: teacherError }] = useTeacherLoginMutation();
+    const [adminLogin, { isLoading: adminLoading, error: adminError }] = useAdminLoginMutation();
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            if (isTeacher) {
+            // Check if email indicates admin (e.g., ends with @admin.com)
+            if (email.toLowerCase().endsWith('@admin.com')) {
+                await adminLogin({ email, password }).unwrap();
+                navigate("/check/admin");
+            } else if (isTeacher) {
                 await teacherLogin({ email, password }).unwrap();
                 navigate("/check/teacher");
             } else {
@@ -43,7 +49,6 @@ const Login = () => {
         if (credentialResponse.credential) {
             const decoded: GoogleCredential = jwtDecode(credentialResponse.credential);
             try {
-                // const endpoint = isTeacher ? '/teacher/google-login' : '/google-login';
                 await (isTeacher ? teacherGLogin : userGLogin)({
                     email: decoded.email,
                     googleId: decoded.sub,
@@ -65,7 +70,7 @@ const Login = () => {
             </div>
 
             <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
-                {(userError || teacherError) && (
+                {(userError || teacherError || adminError) && (
                     <p className="text-red-500 text-sm mb-4">Login failed. Please check your credentials.</p>
                 )}
                 {(userGError || teacherGError) && (
@@ -138,9 +143,9 @@ const Login = () => {
                         <button
                             type="submit"
                             className="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50"
-                            disabled={userLoading || teacherLoading || userGLoading || teacherGLoading}
+                            disabled={userLoading || teacherLoading || userGLoading || teacherGLoading || adminLoading}
                         >
-                            {(userLoading || teacherLoading || userGLoading || teacherGLoading) ? 'Logging in...' : 'Login'}
+                            {(userLoading || teacherLoading || userGLoading || teacherGLoading || adminLoading) ? 'Logging in...' : 'Login'}
                         </button>
                     </div>
                 </form>
@@ -149,21 +154,8 @@ const Login = () => {
                     <GoogleLogin
                         onSuccess={handleGoogleLogin}
                         onError={() => console.error('Google Login Failed')}
-                        render={(renderProps) => (
-                            <button
-                                onClick={renderProps.onClick}
-                                disabled={renderProps.disabled || userLoading || teacherLoading}
-                                className="flex w-full items-center justify-center gap-3 rounded-md bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md hover:from-blue-700 hover:to-indigo-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50 transition-all duration-300"
-                            >
-                                <svg className="h-5 w-5" viewBox="0 0 24 24">
-                                    <path
-                                        fill="#fff"
-                                        d="M12.24 10.285V14.4h6.806c-.275 1.765-2.056 5.174-6.806 5.174-4.095 0-7.439-3.389-7.439-7.574s3.344-7.574 7.439-7.574c2.327 0 3.904.932 4.812 1.734l3.276-3.162C18.104 1.226 15.171 0 12.24 0 5.466 0 0 5.524 0 12.286s5.466 12.286 12.24 12.286c6.944 0 12.24-5.888 12.24-12.286 0-.828-.069-1.643-.204-2.426h-12.036z"
-                                    />
-                                </svg>
-                                Sign in with Google {isTeacher ? '(Teacher)' : '(Student)'}
-                            </button>
-                        )}
+                        width="385"
+                        shape="pill"
                     />
                 </div>
 

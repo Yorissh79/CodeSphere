@@ -37,6 +37,7 @@ export const authCheck = createApi({
                 url: '/auth/check',
                 method: 'GET',
             }),
+
         }),
         checkTeacherAuth: builder.query<AuthCheckResponse, void>({
             query: () => ({

@@ -17,6 +17,9 @@ import SignLayout from "../components/signlayout/SignLayout.tsx";
 import TeacherAppLayout from "../pages/auth/TeacherAuth.tsx";
 import AdminAuth from "../pages/auth/AdminAuth.tsx";
 import CompleteSignup from "../pages/signup/CompleteSignup.tsx";
+import TeacherLayout from "../components/teacherlayout/TeacherLayout.tsx";
+import AdminLayout from "../components/adminlayout/AdminLayout.tsx";
+import Admin from "../pages/admin/Admin.tsx";
 
 export const router = createBrowserRouter([
     {
@@ -77,29 +80,55 @@ export const router = createBrowserRouter([
     },
     {
         path: '/dashboard',
-        Component: StudentLayout,
         children: [
             {
                 path: "/dashboard/student",
-                Component: Home
+                Component: StudentLayout,
+                children: [
+                    {
+                        path: "/dashboard/student",
+                        Component: Home,
+                    }
+                ]
             },
             {
                 path: "/dashboard/teacher",
-                Component: Homet
+                Component: TeacherLayout,
+                children: [
+                    {
+                        path: "/dashboard/teacher",
+                        Component: Homet,
+                    }
+                ]
             },
             {
-                path: '/dashboard/admin',
-                Component: AdminAuth
+                path: "/dashboard/admin",
+                Component: AdminLayout,
+                children: [
+                    {
+                        path: "/dashboard/admin",
+                        Component: Admin,
+                    }
+                ]
             },
         ]
     },
     {
-        path: '/check/student',
-        Component: AppLayout
-    },
-    {
-        path: '/check/teacher',
-        Component: TeacherAppLayout
+        path: '/check',
+        children: [
+            {
+                path: '/check/student',
+                Component: AppLayout
+            },
+            {
+                path: '/check/teacher',
+                Component: TeacherAppLayout
+            },
+            {
+                path: '/check/admin',
+                Component: AdminAuth
+            },
+        ]
     },
     {
         path: "*",
