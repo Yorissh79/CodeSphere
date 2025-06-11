@@ -82,7 +82,7 @@ const Students = () => {
         }
     };
 
-    const groups = [...new Set(users ? users.map((user: { group: string; }) => user.group).filter(Boolean) : [])];
+    const groups: any[] = [...new Set(users ? users.map((user: { group: string; }) => user.group).filter(Boolean) : [])];
 
     if (isLoading) return <div className="text-center py-8 text-gray-600 dark:text-gray-300">Loading...</div>;
     if (error) return <div className="text-center py-8 text-red-500">Error fetching users</div>;
@@ -107,7 +107,7 @@ const Students = () => {
                 >
                     <option value="">All Groups</option>
                     {groups.map((group) => (
-                        <option key={String(Math.random())} value={String(group)}>{String(group)}
+                        <option key={String(Math.random() * 20)} value={String(group)}>
                             {group}
                         </option>
                     ))}
