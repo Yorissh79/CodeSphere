@@ -45,7 +45,7 @@ interface SignupResponse {
 }
 
 interface UpdateUserRequest {
-    _id: string;
+    _id: any;
     name?: string;
     surname?: string;
     email?: string;

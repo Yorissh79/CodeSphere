@@ -2,16 +2,18 @@ import { useEffect, useState } from 'react';
 import {
     useGetAllUsersQuery,
     useUpdateUserMutation,
-    useDeleteUserMutation
+    useDeleteUserMutation,
+    useUserSignupMutation
 } from "../../../services/userApi.ts";
 
 interface User {
-    _id: string;
+    _id?: string;
     name: string;
     surname: string;
     email: string;
     group: string;
     role: string;
+    password?: string;
 }
 
 const Students = () => {
@@ -24,12 +26,13 @@ const Students = () => {
     const { data: users, isLoading, error, refetch } = useGetAllUsersQuery(queryParams);
     const [updateUser, { isLoading: isUpdating }] = useUpdateUserMutation();
     const [deleteUser, { isLoading: isDeleting }] = useDeleteUserMutation();
+    const [createUser, { isLoading: isCreatingUser }] = useUserSignupMutation();
 
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const [formData, setFormData] = useState<Partial<User>>({});
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isCreating, setIsCreating] = useState(false);
 
-    // Refetch when searchQuery or selectedGroup changes
     useEffect(() => {
         refetch();
     }, [searchQuery, selectedGroup, refetch]);
@@ -49,6 +52,13 @@ const Students = () => {
     const openEditModal = (user: User) => {
         setSelectedUser(user);
         setFormData(user);
+        setIsCreating(false);
+        setIsModalOpen(true);
+    };
+
+    const openCreateModal = () => {
+        setFormData({ name: '', surname: '', email: '', group: '', role: 'student', password: '' });
+        setIsCreating(true);
         setIsModalOpen(true);
     };
 
@@ -56,24 +66,26 @@ const Students = () => {
         setIsModalOpen(false);
         setSelectedUser(null);
         setFormData({});
+        setIsCreating(false);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!selectedUser) return;
-
         try {
-            await updateUser({ _id: selectedUser._id, ...formData }).unwrap();
+            if (isCreating) {
+                await createUser(formData as User).unwrap();
+            } else if (selectedUser) {
+                await updateUser({ _id: selectedUser._id, ...formData }).unwrap();
+            }
             closeModal();
             refetch();
         } catch (err) {
-            console.error('Failed to update user:', err);
+            console.error('Failed to submit user:', err);
         }
     };
 
     const handleDelete = async (id: string) => {
         if (!confirm("Are you sure you want to delete this user?")) return;
-
         try {
             await deleteUser(id).unwrap();
             refetch();
@@ -82,7 +94,7 @@ const Students = () => {
         }
     };
 
-    const groups: any[] = [...new Set(users ? users.map((user: { group: string; }) => user.group).filter(Boolean) : [])];
+    const groups: any[] = [...new Set(users ? users.map((user: { group: string }) => user.group).filter(Boolean) : [])];
 
     if (isLoading) return <div className="text-center py-8 text-gray-600 dark:text-gray-300">Loading...</div>;
     if (error) return <div className="text-center py-8 text-red-500">Error fetching users</div>;
@@ -107,11 +119,21 @@ const Students = () => {
                 >
                     <option value="">All Groups</option>
                     {groups.map((group) => (
-                        <option key={String(Math.random() * 20)} value={String(group)}>
+                        <option key={group} value={group}>
                             {group}
                         </option>
                     ))}
                 </select>
+            </div>
+
+            {/* Create Button */}
+            <div className="mb-4">
+                <button
+                    onClick={openCreateModal}
+                    className="px-4 py-2 rounded bg-green-600 hover:bg-green-700 text-white transition"
+                >
+                    Create Student
+                </button>
             </div>
 
             {/* Users Table */}
@@ -143,7 +165,7 @@ const Students = () => {
                                     Edit
                                 </button>
                                 <button
-                                    onClick={() => handleDelete(user._id)}
+                                    onClick={() => handleDelete(user._id!)}
                                     disabled={isDeleting}
                                     className="px-3 py-1 text-sm rounded bg-red-500 hover:bg-red-600 text-white transition disabled:opacity-50"
                                 >
@@ -163,11 +185,13 @@ const Students = () => {
                 </table>
             </div>
 
-            {/* Edit Modal */}
+            {/* Create/Edit Modal */}
             {isModalOpen && (
                 <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
                     <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg max-w-md w-full">
-                        <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">Edit User</h2>
+                        <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">
+                            {isCreating ? 'Create Student' : 'Edit User'}
+                        </h2>
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Name</label>
@@ -202,6 +226,19 @@ const Students = () => {
                                     required
                                 />
                             </div>
+                            {isCreating && (
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Password</label>
+                                    <input
+                                        type="password"
+                                        name="password"
+                                        value={formData.password || ''}
+                                        onChange={handleInputChange}
+                                        className="w-full px-3 py-2 border rounded-md bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100"
+                                        required
+                                    />
+                                </div>
+                            )}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Group</label>
                                 <input
@@ -236,10 +273,10 @@ const Students = () => {
                                 </button>
                                 <button
                                     type="submit"
-                                    disabled={isUpdating}
+                                    disabled={isUpdating || isCreatingUser}
                                     className="px-4 py-2 text-sm rounded bg-indigo-600 hover:bg-indigo-700 text-white transition disabled:opacity-50"
                                 >
-                                    {isUpdating ? 'Saving...' : 'Save'}
+                                    {(isUpdating || isCreatingUser) ? 'Saving...' : isCreating ? 'Create' : 'Save'}
                                 </button>
                             </div>
                         </form>
