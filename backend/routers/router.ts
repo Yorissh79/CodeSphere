@@ -28,6 +28,7 @@ import {
     logoutGoogle,
     registerGoogle
 } from "../controllers/googleController";
+import {createGroup, deleteGroup, getAllGroups, updateGroup} from "../controllers/groupController";
 
 const router = express.Router();
 
@@ -62,5 +63,11 @@ router.post("/register", registerGoogle);
 router.post("/login", loginGoogle);
 router.post("/logout", logoutGoogle);
 router.get("/gUser/check", authedGoogle);
+
+router.put("/group/update/:id", updateGroup);
+router.delete("/group/delete/:id", deleteGroup);
+router.get("/group/gets", getAllGroups);
+router.post("/group/create", createGroup);
+
 
 export default router;

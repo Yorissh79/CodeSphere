@@ -2,25 +2,19 @@ import mongoose, { Document, Schema, Model } from "mongoose";
 
 export interface Group extends Document {
     _id: mongoose.Types.ObjectId;
-    name: string;
-    email: string;
-    surname: string;
+    teachers: string[];
     group: string;
-    miss: string;
     date: Date;
 }
 
-const missSchema: Schema<Group> = new Schema(
+const groupSchema: Schema<Group> = new Schema(
     {
-        name: { type: String, required: true },
-        email: { type: String, required: true, unique: true },
-        surname: { type: String, required: true },
+        teachers: { type: [String], required: true },
         group: { type: String, required: false },
-        miss: { type: String, required: true },
         date: { type: Date, required: true, default: Date.now },
     },
     { timestamps: true }
 );
 
-const missModel: Model<Group> = mongoose.model<Group>("Group", missSchema);
-export default missModel;
+const groupModel: Model<Group> = mongoose.model<Group>("Group", groupSchema);
+export default groupModel;
