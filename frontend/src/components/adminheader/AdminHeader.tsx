@@ -3,7 +3,7 @@ import { useDarkMode } from "../../hooks/useDarkMode.ts";
 import { useEffect, useState } from "react";
 import { useAdminLogoutMutation } from "../../services/adminApi.ts";
 import { useCheckAdminAuthQuery } from "../../services/authCheck.ts";
-import { Moon, Sun, LogOut, User, Users, LayoutDashboard, BookOpen } from "lucide-react"; // Optional: icons
+import { Moon, Sun, LogOut, User, Users, LayoutDashboard, BookOpen } from "lucide-react";
 
 const AdminHeader = () => {
     const [logoutTrigger, { isLoading: logoutLoading, error: logoutError }] = useAdminLogoutMutation();
@@ -26,6 +26,7 @@ const AdminHeader = () => {
             }
         } else {
             setRender(false);
+            navigate("/registration/login")
         }
     }, [location, authData, authError, refetchAuth]);
 

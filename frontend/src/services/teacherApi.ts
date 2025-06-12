@@ -24,11 +24,11 @@ interface Teacher {
 }
 
 interface SignupRequest {
-    name: string;
-    email: string;
-    password: string;
+    name: any;
     surname: string;
+    email: string;
     role: string;
+    password: string;
 }
 
 interface SignupResponse {
