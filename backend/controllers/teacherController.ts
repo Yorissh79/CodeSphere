@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import teacherModel, {IUser} from "../models/teacherModel";
+import teacherModel, {ITeacher} from "../models/teacherModel";
 import { z } from 'zod';
 import { generateToken } from "../utils/generateToken";
 
@@ -31,7 +31,7 @@ export const createTeacher = async (req: Request, res: Response): Promise<any> =
 
     const { name, email, password, surname, role} = result.data;
 
-    const existingUser = await teacherModel.findOne({ email }) as IUser | null;
+    const existingUser = await teacherModel.findOne({ email }) as ITeacher | null;
     if (existingUser) {
         return res.status(400).json({ error: 'User already exists' });
     }
@@ -42,7 +42,7 @@ export const createTeacher = async (req: Request, res: Response): Promise<any> =
         password,
         surname,
         role,
-    }) as IUser;
+    }) as ITeacher;
 
     generateToken(res, newUser._id.toString());
 
@@ -64,7 +64,7 @@ export const loginTeacher = async (req: Request, res: Response): Promise<any> =>
 
     const { email, password } = result.data;
 
-    const user = await teacherModel.findOne({ email }) as IUser | null;
+    const user = await teacherModel.findOne({ email }) as ITeacher | null;
     if (!user) {
         return res.status(401).json({ error: 'User not found' });
     }
@@ -135,7 +135,7 @@ export const updateTeacher = async (req: Request, res: Response): Promise<any> =
         return res.status(400).json({ error: result.error });
     }
 
-    const user = await teacherModel.findById(id) as IUser | null;
+    const user = await teacherModel.findById(id) as ITeacher | null;
     if (!user) {
         return res.status(404).json({ error: 'User not found' });
     }

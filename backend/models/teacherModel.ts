@@ -1,7 +1,7 @@
 import mongoose, { Document, Schema, Model } from "mongoose";
 import bcrypt from "bcrypt";
 
-export interface IUser extends Document {
+export interface ITeacher extends Document {
     _id: mongoose.Types.ObjectId;
     name: string;
     email: string;
@@ -11,7 +11,7 @@ export interface IUser extends Document {
     passwordControl(password: string): Promise<boolean>;
 }
 
-const teacherSchema: Schema<IUser> = new Schema(
+const teacherSchema: Schema<ITeacher> = new Schema(
     {
         name: { type: String, required: true },
         email: { type: String, required: true, unique: true },
@@ -22,7 +22,7 @@ const teacherSchema: Schema<IUser> = new Schema(
     { timestamps: true }
 );
 
-teacherSchema.pre<IUser>("save", async function (next) {
+teacherSchema.pre<ITeacher>("save", async function (next) {
     if (!this.isModified("password")) return next();
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
@@ -34,5 +34,5 @@ teacherSchema.methods.passwordControl = async function (password: string) {
 
 };
 
-const teacherModel: Model<IUser> = mongoose.model<IUser>("Teacher", teacherSchema);
+const teacherModel: Model<ITeacher> = mongoose.model<ITeacher>("Teacher", teacherSchema);
 export default teacherModel;

@@ -3,7 +3,7 @@ import { Request, Response, NextFunction } from "express";
 import UserModel from "../models/userModel";
 
 interface UserPayload {
-    _id: string;
+    _id?: string;
     name: string;
     group?: string;
     email: string;

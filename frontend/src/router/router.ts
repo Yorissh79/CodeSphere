@@ -24,8 +24,7 @@ import Students from "../pages/admin/students/Students.tsx";
 import Teachers from "../pages/admin/teachers/Teachers.tsx";
 import Charts from "../pages/admin/charts/Charts.tsx";
 import Groups from "../pages/admin/groups/Groups.tsx";
-// import Teachers from "../pages/admin/teachers/Teachers.tsx";
-// import Dashboard from "../pages/admin/dashboard/Dashboard.tsx";
+import MissesT from "../pages/teacher/misses/MissesT.tsx";
 
 export const router = createBrowserRouter([
     {
@@ -33,7 +32,7 @@ export const router = createBrowserRouter([
         Component: Layout,
         children: [
             {
-                path: "/",
+                path: "",
                 Component: F
             },
             {
@@ -95,7 +94,11 @@ export const router = createBrowserRouter([
                 children: [
                     {
                         path: "",
-                        Component: Homet
+                        Component: Homet,
+                    },
+                    {
+                        path: "misses",
+                        Component: MissesT
                     }
                 ]
             },

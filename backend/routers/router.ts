@@ -8,19 +8,25 @@ import {
     logout,
     updateUser
 } from "../controllers/userController";
+
 import { checkAuth } from "../controllers/authController";
+
 import {
     createTeacher, deleteTeacher, getAllTeachers,
     loginTeacher,
     logoutTeacher, updateTeacher
 } from "../controllers/teacherController";
+
 import { checkTeacherAuth } from "../controllers/teacherAuthController";
+
 import {
     createAdmin,
     loginAdmin,
     logoutAdmin
 } from "../controllers/adminController";
+
 import { checkAdminAuth } from "../controllers/adminAuthController";
+
 import {
     authedGoogle,
     createGoogle,
@@ -28,7 +34,24 @@ import {
     logoutGoogle,
     registerGoogle
 } from "../controllers/googleController";
-import {createGroup, deleteGroup, getAllGroups, updateGroup} from "../controllers/groupController";
+
+import {
+    createGroup,
+    deleteGroup,
+    getAllGroups,
+    updateGroup
+} from "../controllers/groupController";
+
+import {
+    addMiss,
+    getAllMisses,
+    getMyMisses,
+    getStudentMisses,
+    updateMiss,
+    deleteMiss
+} from "../controllers/missController";
+
+import {validTeacher} from "../controllers/validTeacher";
 
 const router = express.Router();
 
@@ -64,10 +87,18 @@ router.post("/login", loginGoogle);
 router.post("/logout", logoutGoogle);
 router.get("/gUser/check", authedGoogle);
 
+// Group Routes
+router.post("/group/create", createGroup);
+router.get("/group/gets", getAllGroups);
 router.put("/group/update/:id", updateGroup);
 router.delete("/group/delete/:id", deleteGroup);
-router.get("/group/gets", getAllGroups);
-router.post("/group/create", createGroup);
 
+// Miss Routes
+router.post("/misses/add", validTeacher, addMiss);
+router.get("/misses/student/:studentId", getStudentMisses);
+router.get("/misses/all", validTeacher,  getAllMisses);
+router.get("/misses/my", getMyMisses);
+router.put("/misses/:missId", updateMiss);
+router.delete("/misses/:missId", deleteMiss);
 
 export default router;

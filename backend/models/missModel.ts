@@ -2,20 +2,14 @@ import mongoose, { Document, Schema, Model } from "mongoose";
 
 export interface Miss extends Document {
     _id: mongoose.Types.ObjectId;
-    name: string;
-    email: string;
-    surname: string;
-    group: string;
+    student: mongoose.Types.ObjectId; // Reference to User (student)
     miss: string;
     date: Date;
 }
 
 const missSchema: Schema<Miss> = new Schema(
     {
-        name: { type: String, required: true },
-        email: { type: String, required: true, unique: true },
-        surname: { type: String, required: true },
-        group: { type: String, required: false },
+        student: { type: Schema.Types.ObjectId, ref: "User", required: true }, // Reference to User model
         miss: { type: String, required: true },
         date: { type: Date, required: true, default: Date.now },
     },

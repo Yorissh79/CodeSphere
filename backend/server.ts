@@ -1,5 +1,5 @@
 import express from "express";
-import cookieParser from "cookie-parser"; // ✅ import this
+import cookieParser from "cookie-parser";
 import cors from "cors";
 import router from "./routers/router";
 import { connectDB } from "./config/config";
@@ -14,7 +14,7 @@ app.use(cors({
     credentials: true
 }));
 
-app.use(cookieParser()); // ✅ use it before any routes
+app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

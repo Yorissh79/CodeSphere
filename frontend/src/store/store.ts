@@ -6,6 +6,7 @@ import { teacherApi } from "../services/teacherApi.ts";
 import { googleApi } from "../services/googleApi.ts";
 import { adminApi } from "../services/adminApi.ts";
 import { groupApi } from "../services/groupApi.ts";
+import {missesApi} from "../services/missesApi.ts";
 
 export const store = configureStore({
     reducer: {
@@ -14,7 +15,8 @@ export const store = configureStore({
         [teacherApi.reducerPath]: teacherApi.reducer,
         [adminApi.reducerPath]: adminApi.reducer,
         [googleApi.reducerPath]: googleApi.reducer,
-        [groupApi.reducerPath]: groupApi.reducer, // FIXED: was incorrectly using googleApi.reducer
+        [groupApi.reducerPath]: groupApi.reducer,
+        [missesApi.reducerPath]: missesApi.reducer,
     },
     middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware().concat(
@@ -23,7 +25,8 @@ export const store = configureStore({
             teacherApi.middleware,
             googleApi.middleware,
             adminApi.middleware,
-            groupApi.middleware
+            groupApi.middleware,
+            missesApi.middleware
         ),
 });
 
