@@ -1,19 +1,20 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
 interface Miss {
+    details: string;
     _id: string;
     student: {
         _id: string;
         name: string;
         email: string;
     };
-    miss: string;
+    miss: number;
     date: string;
 }
 
 interface AddMissRequest {
     studentId: string;
-    miss: string;
+    miss: number;
     date?: string;
 }
 
@@ -24,10 +25,7 @@ interface AddMissResponse {
 }
 
 interface GetMissesResponse {
-    success: boolean;
-    message: string;
     data: Miss[];
-    count: number;
 }
 
 interface GetAllMissesResponse {
@@ -43,7 +41,7 @@ interface GetAllMissesResponse {
 }
 
 interface UpdateMissRequest {
-    miss?: string;
+    miss?: number;
     date?: string;
 }
 
@@ -109,8 +107,13 @@ export const missesApi = createApi({
             invalidatesTags: ['Misses'],
         }),
         getMyMisses: builder.query<GetMissesResponse, void>({
-            query: () => 'my',
+            query: () => ({
+                url: 'my',
+                method: 'GET',
+            }),
             providesTags: ['Misses'],
+            transformResponse: (response: GetMissesResponse) => response,
+            keepUnusedDataFor: 60,
         }),
     }),
 });

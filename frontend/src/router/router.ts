@@ -25,6 +25,7 @@ import Teachers from "../pages/admin/teachers/Teachers.tsx";
 import Charts from "../pages/admin/charts/Charts.tsx";
 import Groups from "../pages/admin/groups/Groups.tsx";
 import MissesT from "../pages/teacher/misses/MissesT.tsx";
+import MissesS from "../pages/student/misses/MissesS.tsx";
 
 export const router = createBrowserRouter([
     {
@@ -85,6 +86,10 @@ export const router = createBrowserRouter([
                     {
                         path: "",
                         Component: Home
+                    },
+                    {
+                        path: "misses",
+                        Component: MissesS
                     }
                 ]
             },

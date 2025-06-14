@@ -8,20 +8,18 @@ const missSchema = z.object({
     studentId: z.string().refine(val => mongoose.Types.ObjectId.isValid(val), {
         message: "Invalid student ID format",
     }),
-    miss: z.string().min(1),
+    miss: z.number().min(0),
     date: z.string().optional()
 });
 
 const updateMissSchema = z.object({
-    miss: z.string().optional(),
+    miss: z.number().optional(),
     date: z.string().optional()
 });
 
 // Add a new miss
 export const addMiss = async (req: Request, res: Response):Promise<any> => {
     const user = (req as any).user;
-
-    console.log(user)
 
     if (!user) return res.status(401).json({ success: false, message: "Authentication required" });
     if (user.role !== "teacher") return res.status(403).json({ success: false, message: "Only teachers can add misses" });
@@ -100,11 +98,8 @@ export const getAllMisses = async (req: Request, res: Response): Promise<any> =>
 
     const { page = 1, limit = 10, studentId, startDate, endDate } = req.query;
 
-    const filter: any = {
-        miss: { $ne: "Present" } // ✅ Exclude Present entries
-    };
+    const filter: any = {};
 
-    // ✅ Support comma-separated student IDs
     if (studentId) {
         const ids = (studentId as string).split(",").filter(id => mongoose.Types.ObjectId.isValid(id));
         if (ids.length > 0) {

@@ -52,6 +52,7 @@ import {
 } from "../controllers/missController";
 
 import {validTeacher} from "../controllers/validTeacher";
+import {studentValid} from "../controllers/studentValid";
 
 const router = express.Router();
 
@@ -97,7 +98,7 @@ router.delete("/group/delete/:id", deleteGroup);
 router.post("/misses/add", validTeacher, addMiss);
 router.get("/misses/student/:studentId", getStudentMisses);
 router.get("/misses/all", validTeacher,  getAllMisses);
-router.get("/misses/my", getMyMisses);
+router.get("/misses/my", studentValid, getMyMisses);
 router.put("/misses/:missId", updateMiss);
 router.delete("/misses/:missId", deleteMiss);
 

@@ -1,13 +1,13 @@
-import { useUserLogoutMutation } from "../../services/userApi.ts";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useDarkMode } from "../../hooks/useDarkMode.ts";
-import { useCheckAuthQuery } from "../../services/authCheck.ts";
 import { useEffect, useState } from "react";
 import { Menu, X, Moon, Sun } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import {useUserLogoutMutation} from "../../services/userApi.ts";
+import {useCheckAuthQuery} from "../../services/authCheck.ts";
 
 const StudentHeader = () => {
-    const [logoutTrigger, { isLoading: logoutLoading}] = useUserLogoutMutation();
+    const [logoutTrigger, { isLoading: logoutLoading }] = useUserLogoutMutation();
     const navigate = useNavigate();
     const location = useLocation();
     const { isDark, toggleDarkMode } = useDarkMode();
@@ -48,12 +48,26 @@ const StudentHeader = () => {
         <>
             {render ? (
                 <header className="flex justify-between items-center px-4 py-3 bg-gray-100 dark:bg-gray-900 shadow-md transition-colors">
+                    {/* Avatar and Name */}
                     <div className="flex items-center gap-3">
                         <img src={avatarUrl} alt="avatar" className="w-10 h-10 rounded-full" />
                         <span className="text-lg font-medium text-gray-800 dark:text-gray-200 hidden sm:inline">{fullName}</span>
                     </div>
 
+                    {/* Desktop Nav */}
                     <div className="hidden md:flex items-center gap-4">
+                        <Link
+                            to="/user/student/misses"
+                            className="px-3 py-2 text-sm font-medium text-gray-800 dark:text-white hover:underline"
+                        >
+                            Misses
+                        </Link>
+                        <Link
+                            to="/user/student/code-editor"
+                            className="px-3 py-2 text-sm font-medium text-gray-800 dark:text-white hover:underline"
+                        >
+                            Code Editor
+                        </Link>
                         <button
                             onClick={toggleDarkMode}
                             className={`w-14 h-8 flex items-center rounded-full p-1 transition-colors duration-300 ${
@@ -104,11 +118,17 @@ const StudentHeader = () => {
                                 </div>
 
                                 <nav className="flex flex-col gap-4">
-                                    <Link to="/student/dashboard" className="text-gray-800 dark:text-white hover:underline">
+                                    <Link to="/user/student/dashboard" className="text-gray-800 dark:text-white hover:underline">
                                         Dashboard
                                     </Link>
-                                    <Link to="/student/profile" className="text-gray-800 dark:text-white hover:underline">
+                                    <Link to="/user/student/profile" className="text-gray-800 dark:text-white hover:underline">
                                         Profile
+                                    </Link>
+                                    <Link to="/user/student/misses" className="text-gray-800 dark:text-white hover:underline">
+                                        Misses
+                                    </Link>
+                                    <Link to="/user/student/code-editor" className="text-gray-800 dark:text-white hover:underline">
+                                        Code Editor
                                     </Link>
                                     <button
                                         onClick={toggleDarkMode}

@@ -3,14 +3,14 @@ import mongoose, { Document, Schema, Model } from "mongoose";
 export interface Miss extends Document {
     _id: mongoose.Types.ObjectId;
     student: mongoose.Types.ObjectId; // Reference to User (student)
-    miss: string;
+    miss: Number;
     date: Date;
 }
 
 const missSchema: Schema<Miss> = new Schema(
     {
         student: { type: Schema.Types.ObjectId, ref: "User", required: true }, // Reference to User model
-        miss: { type: String, required: true },
+        miss: { type: Number, required: true },
         date: { type: Date, required: true, default: Date.now },
     },
     { timestamps: true }

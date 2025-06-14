@@ -1,15 +1,17 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
-import { Check, X, ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { useGetAllUsersQuery } from "../../../services/userApi";
 import { useAddMissMutation, useGetAllMissesQuery } from "../../../services/missesApi";
-import {Link} from "react-router-dom";
+import { Link } from "react-router-dom";
 
 const MissesT = () => {
     const [selectedGroup, setSelectedGroup] = useState("");
-    const [attendance, setAttendance] = useState<Record<string, "present" | "miss">>({});
+    const [attendance, setAttendance] = useState<Record<string, number>>({});
     const [modalStudent, setModalStudent] = useState<{ id: string; name: string } | null>(null);
+    const TOTAL_HOURS = 6;
+    const MAX_MISS_HOURS = 24;
 
     const { data: usersData, isLoading, error } = useGetAllUsersQuery({ role: "student" });
     const { data: missesData } = useGetAllMissesQuery({ page: 1, limit: 1000 });
@@ -31,31 +33,42 @@ const MissesT = () => {
 
     const allMisses = Array.isArray(missesData?.data) ? missesData.data : [];
 
-    const getMissCount = (studentId: string) =>
-        allMisses.filter((m) => m.student._id === studentId && m.miss === "Missed class").length;
-
-    const getMissDates = (studentId: string) =>
-        allMisses
-            .filter((m) => m.student._id === studentId && m.miss === "Missed class")
-            .map((m) => new Date(m.date).toLocaleDateString());
-
-    const markAll = (type: "present" | "miss") => {
-        const updated = students.reduce((acc, s) => {
-            acc[s.id] = type;
-            return acc;
-        }, {} as Record<string, "present" | "miss">);
-        setAttendance(updated);
-        toast.success(`All students marked as ${type}`);
+    const getMissHours = (studentId: string) => {
+        const totalMissHours = allMisses
+            .filter((m) => m.student._id === studentId && m.miss !== undefined)
+            .reduce((sum, m) => {
+                const missHours = TOTAL_HOURS - (m.miss || 0); // 6 hours means 0 missed, 5 hours means 1 missed, etc.
+                return sum + missHours;
+            }, 0);
+        return Math.min(totalMissHours, MAX_MISS_HOURS); // Cap at 24 hours
     };
 
-    const markSingle = (studentId: string, type: "present" | "miss") => {
-        setAttendance((prev) => ({ ...prev, [studentId]: type }));
+    const getMissDetails = (studentId: string) =>
+        allMisses
+            .filter((m) => m.student._id === studentId && m.miss !== undefined)
+            .map((m) => ({
+                date: new Date(m.date).toLocaleDateString(),
+                hoursMissed: TOTAL_HOURS - (m.miss || 0), // Convert to missed hours
+            }))
+            .filter((detail) => detail.hoursMissed > 0); // Only show records with actual misses
+
+    const markAll = (hours: number) => {
+        const updated = students.reduce((acc, s) => {
+            acc[s.id] = hours;
+            return acc;
+        }, {} as Record<string, number>);
+        setAttendance(updated);
+        toast.success(`All students marked as ${hours} hours present`);
+    };
+
+    const markSingle = (studentId: string, hours: number) => {
+        setAttendance((prev) => ({ ...prev, [studentId]: hours }));
         const name = students.find((s) => s.id === studentId)?.name;
-        toast.success(`${name} marked as ${type}`);
+        toast.success(`${name} marked as ${hours} hours present`);
     };
 
     const handleSendAllAttendance = async () => {
-        const relevantStudents = students.filter((s) => attendance[s.id]);
+        const relevantStudents = students.filter((s) => attendance[s.id] !== undefined);
 
         if (relevantStudents.length === 0) {
             toast.error("No students marked.");
@@ -64,10 +77,10 @@ const MissesT = () => {
 
         try {
             for (const student of relevantStudents) {
-                const status = attendance[student.id];
+                const hoursPresent = attendance[student.id];
                 await addMiss({
                     studentId: student.id,
-                    miss: status === "miss" ? "Missed class" : "Present",
+                    miss: hoursPresent, // Store hours present (6 = present, 0 = full miss)
                     date: new Date().toISOString(),
                 }).unwrap();
             }
@@ -83,9 +96,8 @@ const MissesT = () => {
     return (
         <section className="px-4 py-8 bg-white dark:bg-gray-900 min-h-screen">
             <h2 className="text-3xl font-bold text-center text-gray-800 dark:text-white mb-10">
-                Add Missed Class
+                Add Attendance
             </h2>
-
 
             {!selectedGroup ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
@@ -107,14 +119,13 @@ const MissesT = () => {
                 </div>
             ) : (
                 <div className="max-w-6xl mx-auto space-y-8">
-                    {/* Back Button */}
                     <div className="flex justify-start">
                         <button
                             onClick={() => setSelectedGroup("")}
                             className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white rounded-md mb-4 shadow hover:shadow-md transition"
                         >
                             <ArrowLeft size={18} />
-                            Back to Teachers
+                            Back to Groups
                         </button>
                     </div>
 
@@ -123,11 +134,11 @@ const MissesT = () => {
                             Students in {selectedGroup}
                         </h3>
                         <div className="space-x-2">
-                            <button onClick={() => markAll("present")} className="px-4 py-2 bg-green-500 text-white rounded-md">
-                                All Present
+                            <button onClick={() => markAll(TOTAL_HOURS)} className="px-4 py-2 bg-green-500 text-white rounded-md">
+                                All Present (6h)
                             </button>
-                            <button onClick={() => markAll("miss")} className="px-4 py-2 bg-red-500 text-white rounded-md">
-                                All Miss
+                            <button onClick={() => markAll(0)} className="px-4 py-2 bg-red-500 text-white rounded-md">
+                                All Miss (0h)
                             </button>
                             <button onClick={handleSendAllAttendance} className="px-4 py-2 bg-blue-500 text-white rounded-md">
                                 Send All Attendance
@@ -141,31 +152,21 @@ const MissesT = () => {
                                 <div className="flex justify-between items-center">
                                     <span className="text-gray-800 dark:text-white font-medium">{student.name}</span>
                                     <div className="space-x-2 flex items-center">
-                                        <button
-                                            onClick={() => markSingle(student.id, "present")}
-                                            className={`p-2 rounded-full ${
-                                                attendance[student.id] === "present"
-                                                    ? "bg-green-500 text-white"
-                                                    : "bg-gray-200 dark:bg-gray-700"
-                                            }`}
+                                        <select
+                                            value={attendance[student.id] ?? ""}
+                                            onChange={(e) => markSingle(student.id, Number(e.target.value))}
+                                            className="p-2 rounded-md bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white"
                                         >
-                                            <Check size={16} />
-                                        </button>
-                                        <button
-                                            onClick={() => markSingle(student.id, "miss")}
-                                            className={`p-2 rounded-full ${
-                                                attendance[student.id] === "miss"
-                                                    ? "bg-red-500 text-white"
-                                                    : "bg-gray-200 dark:bg-gray-700"
-                                            }`}
-                                        >
-                                            <X size={16} />
-                                        </button>
+                                            <option value="" disabled>Select Hours</option>
+                                            {[...Array(TOTAL_HOURS + 1)].map((_, i) => (
+                                                <option key={i} value={i}>{i} hours</option>
+                                            ))}
+                                        </select>
                                         <button
                                             onClick={() => setModalStudent(student)}
                                             className="px-2 py-1 bg-purple-500 text-white rounded-md text-sm"
                                         >
-                                            Misses: {getMissCount(student.id)}
+                                            Misses: {getMissHours(student.id)}/{MAX_MISS_HOURS}h
                                         </button>
                                     </div>
                                 </div>
@@ -175,22 +176,24 @@ const MissesT = () => {
                 </div>
             )}
 
-            {/* Modal */}
             {modalStudent && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                     <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
                         <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-white">
-                            {modalStudent.name}'s Missed Dates
+                            {modalStudent.name}'s Missed Hours
                         </h3>
+                        <p className="text-gray-700 dark:text-gray-200 mb-2">
+                            Total Missed: {getMissHours(modalStudent.id)}/{MAX_MISS_HOURS} hours
+                        </p>
                         <ul className="space-y-1 max-h-60 overflow-y-auto text-gray-700 dark:text-gray-200">
-                            {getMissDates(modalStudent.id).length > 0 ? (
-                                getMissDates(modalStudent.id).map((date, i) => (
+                            {getMissDetails(modalStudent.id).length > 0 ? (
+                                getMissDetails(modalStudent.id).map((detail, i) => (
                                     <li key={i} className="border-b pb-1 dark:border-gray-700">
-                                        {date}
+                                        {detail.date}: {detail.hoursMissed} hours missed
                                     </li>
                                 ))
                             ) : (
-                                <li>No missed classes</li>
+                                <li>No missed hours</li>
                             )}
                         </ul>
                         <button
@@ -212,7 +215,6 @@ const MissesT = () => {
                     Back to Main Page
                 </Link>
             </div>
-
         </section>
     );
 };
