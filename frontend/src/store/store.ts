@@ -7,6 +7,8 @@ import { googleApi } from "../services/googleApi.ts";
 import { adminApi } from "../services/adminApi.ts";
 import { groupApi } from "../services/groupApi.ts";
 import {missesApi} from "../services/missesApi.ts";
+import {quizApi} from "../services/quizApi.ts";
+import {questionApi} from "../services/questionApi.ts";
 
 export const store = configureStore({
     reducer: {
@@ -17,6 +19,8 @@ export const store = configureStore({
         [googleApi.reducerPath]: googleApi.reducer,
         [groupApi.reducerPath]: groupApi.reducer,
         [missesApi.reducerPath]: missesApi.reducer,
+        [quizApi.reducerPath]: quizApi.reducer,
+        [questionApi.reducerPath]: questionApi.reducer,
     },
     middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware().concat(
@@ -26,7 +30,9 @@ export const store = configureStore({
             googleApi.middleware,
             adminApi.middleware,
             groupApi.middleware,
-            missesApi.middleware
+            missesApi.middleware,
+            quizApi.middleware,
+            questionApi.middleware,
         ),
 });
 

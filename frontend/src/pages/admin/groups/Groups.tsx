@@ -49,8 +49,6 @@ const Groups = () => {
         teachers: [],
     });
 
-    console.log(groups)
-
     const [currentPage, setCurrentPage] = useState(1);
     const groupsPerPage = 5;
 

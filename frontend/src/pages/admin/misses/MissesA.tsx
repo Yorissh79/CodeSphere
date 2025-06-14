@@ -6,7 +6,7 @@ import { useGetAllUsersQuery } from "../../../services/userApi";
 import { useAddMissMutation, useGetAllMissesQuery, useUpdateMissMutation } from "../../../services/missesApi";
 import { Link } from "react-router-dom";
 
-const MissesT = () => {
+const MissesA = () => {
     const [selectedGroup, setSelectedGroup] = useState("");
     const [attendance, setAttendance] = useState<Record<string, number>>({});
     const [modalStudent, setModalStudent] = useState<{ id: string; name: string } | null>(null);
@@ -165,7 +165,7 @@ const MissesT = () => {
     return (
         <section className="px-4 py-8 bg-white dark:bg-gray-900 min-h-screen">
             <h2 className="text-3xl font-bold text-center text-gray-800 dark:text-white mb-10">
-                Add Attendance
+                Manage Attendance (Admin)
             </h2>
 
             {!selectedGroup ? (
@@ -325,15 +325,15 @@ const MissesT = () => {
 
             <div className="w-full flex justify-center mt-4">
                 <Link
-                    to="/user/teacher"
+                    to="/user/admin"
                     className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white rounded-md shadow hover:shadow-md transition duration-200"
                 >
                     <ArrowLeft size={18} />
-                    Back to Main Page
+                    Back to Admin Dashboard
                 </Link>
             </div>
         </section>
     );
 };
 
-export default MissesT;
+export default MissesA;

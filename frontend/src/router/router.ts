@@ -26,6 +26,8 @@ import Charts from "../pages/admin/charts/Charts.tsx";
 import Groups from "../pages/admin/groups/Groups.tsx";
 import MissesT from "../pages/teacher/misses/MissesT.tsx";
 import MissesS from "../pages/student/misses/MissesS.tsx";
+import MissesA from "../pages/admin/misses/MissesA.tsx";
+import QuizA from "../pages/admin/quiz/QuizA.tsx";
 
 export const router = createBrowserRouter([
     {
@@ -130,6 +132,14 @@ export const router = createBrowserRouter([
                     {
                         path: "groups",
                         Component: Groups
+                    },
+                    {
+                        path: "misses",
+                        Component: MissesA
+                    },
+                    {
+                        path: "quiz",
+                        Component: QuizA
                     }
                 ]
             },

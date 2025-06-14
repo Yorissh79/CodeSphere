@@ -74,6 +74,18 @@ const AdminHeader = () => {
                         >
                             <Users className="w-4 h-4" /> Groups
                         </Link>
+                        <Link
+                            to="/user/admin/misses"
+                            className="flex items-center gap-1 text-gray-800 dark:text-gray-200 hover:text-indigo-600 transition"
+                        >
+                            <Users className="w-4 h-4" /> Misses
+                        </Link>
+                        <Link
+                            to="/user/admin/quiz"
+                            className="flex items-center gap-1 text-gray-800 dark:text-gray-200 hover:text-indigo-600 transition"
+                        >
+                            <Users className="w-4 h-4" /> Quiz
+                        </Link>
                     </nav>
                     
                     <div className="flex items-center gap-4">

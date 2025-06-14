@@ -17,7 +17,7 @@ import {
     logoutTeacher, updateTeacher
 } from "../controllers/teacherController";
 
-import { checkTeacherAuth } from "../controllers/teacherAuthController";
+import { checkTeacherAuth } from "../middleware/teacherAuthController";
 
 import {
     createAdmin,
@@ -25,7 +25,7 @@ import {
     logoutAdmin
 } from "../controllers/adminController";
 
-import { checkAdminAuth } from "../controllers/adminAuthController";
+import { checkAdminAuth } from "../middleware/adminAuthController";
 
 import {
     authedGoogle,
@@ -51,8 +51,21 @@ import {
     deleteMiss
 } from "../controllers/missController";
 
-import {validTeacher} from "../controllers/validTeacher";
-import {studentValid} from "../controllers/studentValid";
+import {
+    createQuiz,
+    getAllQuizzes,
+    getQuizWithQuestions,
+    deleteQuiz,
+} from "../controllers/quizController";
+
+import {
+    createQuestion,
+    getQuestionsByQuiz,
+    deleteQuestion,
+} from "../controllers/questionController";
+
+import {validTeacherOrAdmin} from "../middleware/validTeacherOrAdmin";
+import {studentValid} from "../middleware/studentValid";
 
 const router = express.Router();
 
@@ -89,17 +102,26 @@ router.post("/logout", logoutGoogle);
 router.get("/gUser/check", authedGoogle);
 
 // Group Routes
-router.post("/group/create", createGroup);
+router.post("/group/create", validTeacherOrAdmin, createGroup);
 router.get("/group/gets", getAllGroups);
 router.put("/group/update/:id", updateGroup);
 router.delete("/group/delete/:id", deleteGroup);
 
 // Miss Routes
-router.post("/misses/add", validTeacher, addMiss);
+router.post("/misses/add", validTeacherOrAdmin, addMiss);
 router.get("/misses/student/:studentId", getStudentMisses);
-router.get("/misses/all", validTeacher,  getAllMisses);
+router.get("/misses/all", validTeacherOrAdmin, getAllMisses);
 router.get("/misses/my", studentValid, getMyMisses);
-router.put("/misses/:missId", updateMiss);
+router.put("/misses/update/:missId", validTeacherOrAdmin, updateMiss);
 router.delete("/misses/:missId", deleteMiss);
+
+router.post("/quiz/create", createQuiz);
+router.get("/quiz/all", getAllQuizzes);
+router.get("/quiz/:id", getQuizWithQuestions);
+router.delete("/quiz/:id", deleteQuiz);
+
+router.post("/question/create", createQuestion);
+router.get("/question/quiz/:quizId", getQuestionsByQuiz);
+router.delete("/question/:id", deleteQuestion);
 
 export default router;

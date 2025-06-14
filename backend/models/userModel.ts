@@ -6,16 +6,16 @@ export interface IUser extends Document {
     name: string;
     email: string;
     password: string;
-    surname?: string;
+    surname: string;
     role: string;
-    group?: string;
+    group: string;
     googleId?: string;
     passwordControl(password: string): Promise<boolean>;
 }
 
 const userSchema: Schema<IUser> = new Schema(
     {
-        _id: mongoose.Types.ObjectId,
+        // _id: mongoose.Types.ObjectId,
         name: { type: String, required: true },
         email: { type: String, required: true, unique: true },
         password: { type: String, required: false },

@@ -92,8 +92,8 @@ export const getAllMisses = async (req: Request, res: Response): Promise<any> =>
         return res.status(401).json({ success: false, message: "Authentication required" });
     }
 
-    if (user.role !== "teacher") {
-        return res.status(403).json({ success: false, message: "Only teachers can view all misses" });
+    if (user.role !== "teacher" && user.role !== "admin") {
+        return res.status(403).json({ success: false, message: "Only teachers and admin can view all misses" });
     }
 
     const { page = 1, limit = 10, studentId, startDate, endDate } = req.query;
@@ -150,7 +150,7 @@ export const updateMiss = async (req: Request, res: Response): Promise<any> => {
     const { missId } = req.params;
 
     if (!user) return res.status(401).json({ success: false, message: "Authentication required" });
-    if (user.role !== "teacher") return res.status(403).json({ success: false, message: "Only teachers can update misses" });
+    if (user.role !== "teacher" && user.role !== "admin") return res.status(403).json({ success: false, message: "Only teachers can update misses" });
     if (!mongoose.Types.ObjectId.isValid(missId)) return res.status(400).json({ success: false, message: "Invalid miss ID format" });
 
     const parsed = updateMissSchema.safeParse(req.body);
