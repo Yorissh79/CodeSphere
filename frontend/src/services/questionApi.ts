@@ -5,7 +5,7 @@ interface Question {
     quizId: string;
     type: 'mcq' | 'truefalse' | 'short';
     questionText: string;
-    options?: string;
+    options?: string[];
     correctAnswerIndex?: number;
 }
 
@@ -13,7 +13,7 @@ interface CreateQuestionRequest {
     quizId: string;
     type: 'mcq' | 'truefalse' | 'short';
     questionText: string;
-    options?: string;
+    options?: string[];
     correctAnswerIndex?: number;
 }
 
