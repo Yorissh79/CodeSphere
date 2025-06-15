@@ -68,6 +68,12 @@ const TeacherHeader = () => {
                         >
                             Code Editor
                         </Link>
+                        <Link
+                            to="/user/teacher/quiz"
+                            className="px-3 py-2 text-sm font-medium text-gray-800 dark:text-white hover:underline"
+                        >
+                            Quiz
+                        </Link>
                         <button
                             onClick={toggleDarkMode}
                             className={`w-14 h-8 flex items-center rounded-full p-1 transition-colors duration-300 ${
@@ -129,6 +135,9 @@ const TeacherHeader = () => {
                                     </Link>
                                     <Link to="/user/teacher/code-editor" className="text-gray-800 dark:text-white hover:underline">
                                         Code Editor
+                                    </Link>
+                                    <Link to="/user/teacher/quiz" className="text-gray-800 dark:text-white hover:underline">
+                                        Quiz
                                     </Link>
                                     <button
                                         onClick={toggleDarkMode}

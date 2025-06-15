@@ -28,6 +28,7 @@ import MissesT from "../pages/teacher/misses/MissesT.tsx";
 import MissesS from "../pages/student/misses/MissesS.tsx";
 import MissesA from "../pages/admin/misses/MissesA.tsx";
 import QuizA from "../pages/admin/quiz/QuizA.tsx";
+import QuizS from "../pages/student/quiz/QuizS.tsx";
 
 export const router = createBrowserRouter([
     {
@@ -92,6 +93,10 @@ export const router = createBrowserRouter([
                     {
                         path: "misses",
                         Component: MissesS
+                    },
+                    {
+                        path: "quiz",
+                        Component: QuizS
                     }
                 ]
             },

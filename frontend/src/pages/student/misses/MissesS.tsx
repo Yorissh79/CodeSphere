@@ -41,6 +41,9 @@ const MissesS = () => {
                     <div className="text-center text-gray-700 dark:text-gray-200 font-semibold">
                         Total Missed Hours: {Math.min(totalMissedHours, MAX_MISS_HOURS)}/{MAX_MISS_HOURS}
                     </div>
+                    {totalMissedHours >= 24 && (
+                        <div className="text-center text-red-500">You have exceeded your maximum missed hours.</div>
+                    )}
                     <div className="grid gap-4">
                         {misses.map((miss: { date: string; hoursMissed: number }, index: number) => (
                             <motion.div
