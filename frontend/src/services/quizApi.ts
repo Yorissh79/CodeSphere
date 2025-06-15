@@ -8,6 +8,7 @@ interface Quiz {
 
 interface CreateQuizRequest {
     title: string;
+    timeLimit: number;
 }
 
 interface CreateQuizResponse {

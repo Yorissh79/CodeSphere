@@ -106,6 +106,10 @@ export const router = createBrowserRouter([
                     {
                         path: "misses",
                         Component: MissesT
+                    },
+                    {
+                        path: "quiz",
+                        Component: QuizA
                     }
                 ]
             },
