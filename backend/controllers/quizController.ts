@@ -8,6 +8,7 @@ const createQuizSchema = z.object({
     title: z.string(),
     description: z.string().optional(),
     tags: z.array(z.string()).optional(),
+    group: z.string().optional(),
     timeLimit: z.number().int().positive().optional(),
     opened: z.boolean(),
 });
@@ -16,11 +17,10 @@ const updateQuizSchema = z.object({
     title: z.string().optional(),
     description: z.string().optional(),
     tags: z.array(z.string()).optional(),
+    group: z.string().optional(),
     timeLimit: z.number().int().positive().optional(),
     opened: z.boolean().optional(),
 });
-
-
 
 export const updateQuiz = async (req: Request, res: Response): Promise<any> => {
     const result = updateQuizSchema.safeParse(req.body);

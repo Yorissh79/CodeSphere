@@ -22,6 +22,7 @@ interface CreateQuizRequest {
     description?: string;
     tags?: string[];
     opened: boolean;
+    group?: string;
 }
 
 interface UpdateQuizRequest {
@@ -31,6 +32,7 @@ interface UpdateQuizRequest {
     description?: string;
     tags?: string[];
     opened?: boolean;
+    group?: string;
 }
 
 interface CreateQuizResponse {
