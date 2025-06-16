@@ -4,13 +4,15 @@ import {useGetAllQuizzesQuery} from '../../../services/quizApi';
 import {useGetQuestionsByQuizQuery} from '../../../services/questionApi';
 import {useGetAllUsersQuery} from '../../../services/userApi';
 import {useGetQuizAnswersQuery} from '../../../services/answerApi';
-import StudentAnswerTable from './StudentAnswerTable';
+import {StudentAnswerTable} from './StudentAnswerTable';
+import StudentAnswersModal from './StudentAnswersModal';
 import LoadingSkeleton from './LoadingSkeleton';
 import ErrorFallback from './ErrorFallback';
-import type {Quiz, StudentEvaluation} from './types';
+import type {Quiz, StudentEvaluation, User, Question, AnswerPayload} from './types';
 
-const TeacherQuizDashboard: React.FC = () => {
+const QuizAnalysisPage: React.FC = () => {
     const [selectedQuizId, setSelectedQuizId] = useState<string | null>(null);
+    const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
     const [page, setPage] = useState(1);
     const limit = 10; // Students per page
 
@@ -19,7 +21,7 @@ const TeacherQuizDashboard: React.FC = () => {
 
     // Fetch questions for the selected quiz (skip if no quiz selected)
     const {data: questions, isLoading: questionsLoading, error: questionsError} = useGetQuestionsByQuizQuery(
-        selectedQuizId || '', // Convert null to empty string
+        selectedQuizId || '',
         {skip: !selectedQuizId}
     );
 
@@ -28,27 +30,23 @@ const TeacherQuizDashboard: React.FC = () => {
 
     // Fetch answers for the selected quiz
     const {data: answers, isLoading: answersLoading, error: answersError} = useGetQuizAnswersQuery(
-        selectedQuizId || '', // Convert null to empty string
+        selectedQuizId || '',
         {skip: !selectedQuizId}
     );
 
     // Filter students who have submitted (based on answers)
-    const participatingStudents = users?.filter((user: { _id: string; }) =>
-        answers?.some((answer) => answer.studentId === user._id)
+    const participatingStudents = users?.filter((user: User) =>
+        answers?.some((answer: AnswerPayload) => answer.studentId === user._id)
     );
 
     // Transform answers into StudentEvaluation format
-    const studentAnswers: StudentEvaluation[] = participatingStudents?.map((student: {
-        _id: string;
-        name: any;
-        surname: any;
-    }) => {
-        const studentAnswers = answers?.filter((answer) => answer.studentId === student._id) || [];
+    const studentAnswers: StudentEvaluation[] = participatingStudents?.map((student: User) => {
+        const studentAnswers = answers?.filter((answer: AnswerPayload) => answer.studentId === student._id) || [];
         return {
             studentId: student._id,
             studentName: `${student.name || ''} ${student.surname || ''}`.trim(),
-            answers: questions?.map((question) => {
-                const answer = studentAnswers.find((ans) => ans.questionId === question._id);
+            answers: questions?.map((question: Question) => {
+                const answer = studentAnswers.find((ans: AnswerPayload) => ans.questionId === question._id);
                 return answer || {
                     studentId: student._id,
                     questionId: question._id,
@@ -60,6 +58,9 @@ const TeacherQuizDashboard: React.FC = () => {
             totalScore: 0, // Placeholder, as scoring logic is not provided
         };
     }) || [];
+
+    // Find selected student for modal
+    const selectedStudent = participatingStudents?.find((student: User) => student._id === selectedStudentId);
 
     // Loading state for quiz list
     const isQuizListLoading = quizzesLoading || usersLoading;
@@ -120,6 +121,7 @@ const TeacherQuizDashboard: React.FC = () => {
                         custom={index}
                         onClick={() => {
                             setSelectedQuizId(quiz._id);
+                            setSelectedStudentId(null); // Reset student selection
                             setPage(1); // Reset pagination
                         }}
                     >
@@ -134,24 +136,35 @@ const TeacherQuizDashboard: React.FC = () => {
             {selectedQuizId && (
                 <div>
                     <h2 className="text-xl font-bold mb-4">
-                        Analysis for {quizzes.find((q) => q._id === selectedQuizId)?.title || 'Selected Quiz'}
+                        Analysis for {quizzes.find((q: Quiz) => q._id === selectedQuizId)?.title || 'Selected Quiz'}
                     </h2>
                     {isQuizDetailsLoading ? (
                         <LoadingSkeleton/>
                     ) : error || !questions || !paginatedStudents ? (
                         <ErrorFallback message="Failed to load quiz analysis data."/>
                     ) : (
-                        <StudentAnswerTable
-                            students={paginatedStudents}
-                            questions={questions}
-                            studentAnswers={studentAnswers.filter((sa) => paginatedStudents.some((ps: {
-                                _id: string;
-                            }) => ps._id === sa.studentId))}
-                            page={page}
-                            total={total}
-                            limit={limit}
-                            setPage={setPage}
-                        />
+                        <>
+                            <StudentAnswerTable
+                                students={paginatedStudents}
+                                questions={questions}
+                                studentAnswers={studentAnswers.filter((sa: StudentEvaluation) =>
+                                    paginatedStudents.some((ps: User) => ps._id === sa.studentId)
+                                )}
+                                page={page}
+                                total={total}
+                                limit={limit}
+                                setPage={setPage}
+                                onStudentClick={(studentId: string) => setSelectedStudentId(studentId)}
+                            />
+                            {selectedStudent && answers && questions && (
+                                <StudentAnswersModal
+                                    student={selectedStudent}
+                                    answers={answers}
+                                    questions={questions}
+                                    onClose={() => setSelectedStudentId(null)}
+                                />
+                            )}
+                        </>
                     )}
                 </div>
             )}
@@ -159,4 +172,4 @@ const TeacherQuizDashboard: React.FC = () => {
     );
 };
 
-export default TeacherQuizDashboard;
+export default QuizAnalysisPage;
