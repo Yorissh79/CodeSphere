@@ -1,9 +1,9 @@
 import {useNavigate} from "react-router-dom";
-import { useEffect } from "react";
+import {useEffect} from "react";
 import {useCheckAuthQuery} from "../../services/authCheck.ts";
 
 interface User {
-    id: string;
+    _id: string;
     name: string;
     email: string;
     surname: string;
@@ -13,7 +13,7 @@ interface User {
 
 export default function AppLayout() {
 
-    const { data, error, isLoading } = useCheckAuthQuery();
+    const {data, error, isLoading} = useCheckAuthQuery();
     const navigate = useNavigate();
 
     const user: User | undefined = data?.user;
@@ -26,9 +26,9 @@ export default function AppLayout() {
             }
 
             if (error) {
-                navigate("/registration/login", { replace: true });
+                navigate("/registration/login", {replace: true});
             } else if (user?.role === "student") {
-                navigate("/user/student", { replace: true });
+                navigate("/user/student", {replace: true});
             }
         };
 

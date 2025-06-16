@@ -1,9 +1,9 @@
 import {useNavigate} from "react-router-dom";
-import { useEffect } from "react";
+import {useEffect} from "react";
 import {useCheckAdminAuthQuery} from "../../services/authCheck.ts";
 
 interface User {
-    id: string;
+    _id: string;
     name: string;
     email: string;
     surname: string;
@@ -12,7 +12,7 @@ interface User {
 
 export default function AdminAuth() {
 
-    const { data, error, isLoading } = useCheckAdminAuthQuery();
+    const {data, error, isLoading} = useCheckAdminAuthQuery();
     const navigate = useNavigate();
 
     const user: User | undefined = data?.user;
@@ -25,9 +25,9 @@ export default function AdminAuth() {
             }
 
             if (error) {
-                navigate("/registration/login", { replace: true });
+                navigate("/registration/login", {replace: true});
             } else if (user?.role === "admin") {
-                navigate("/user/admin", { replace: true });
+                navigate("/user/admin", {replace: true});
             }
         };
 
