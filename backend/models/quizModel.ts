@@ -6,6 +6,7 @@ export interface IQuiz extends Document {
     description?: string;
     tags?: string[];
     questionIds: mongoose.Types.ObjectId[];
+    opened: boolean;
     timeLimit?: number; // in seconds
 }
 
@@ -16,6 +17,7 @@ const quizSchema: Schema<IQuiz> = new Schema(
         tags: [{ type: String }],
         questionIds: [{ type: Schema.Types.ObjectId, ref: "Question" }],
         timeLimit: { type: Number },
+        opened: { type: Boolean, default: false }
     },
     { timestamps: true }
 );

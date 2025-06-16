@@ -1,14 +1,30 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import {createApi, fetchBaseQuery} from '@reduxjs/toolkit/query/react';
 
 interface Quiz {
     _id: string;
     title: string;
-    createdAt: string;
+    createdAt?: string;
+    description?: string;
+    tags?: string[];
+    timeLimit: number;
+    opened?: boolean;
 }
 
 interface CreateQuizRequest {
     title: string;
-    timeLimit: number;
+    timeLimit?: number;
+    description?: string;
+    tags?: string[];
+    opened: boolean;
+}
+
+interface UpdateQuizRequest {
+    id: string;
+    title?: string;
+    timeLimit?: number;
+    description?: string;
+    tags?: string[];
+    opened?: boolean;
 }
 
 interface CreateQuizResponse {
@@ -16,9 +32,9 @@ interface CreateQuizResponse {
     quiz: Quiz;
 }
 
-interface GetQuizWithQuestionsResponse {
+interface UpdateQuizResponse {
+    message: string;
     quiz: Quiz;
-    questions: any[]; // You can strongly type this if you have a `Question` interface
 }
 
 export const quizApi = createApi({
@@ -41,13 +57,29 @@ export const quizApi = createApi({
         getAllQuizzes: builder.query<Quiz[], void>({
             query: () => 'all',
         }),
-        getQuizWithQuestions: builder.query<GetQuizWithQuestionsResponse, string>({
-            query: (id) => `${id}`,
+        getQuizById: builder.query<Quiz, string>({
+            query: (id) => `${id}/basic`,
+        }),
+        updateQuiz: builder.mutation<UpdateQuizResponse, UpdateQuizRequest>({
+            query: ({id, ...quizData}) => ({
+                url: `update/${id}`,
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: quizData,
+            }),
         }),
         deleteQuiz: builder.mutation<{ message: string }, string>({
             query: (id) => ({
                 url: `${id}`,
                 method: 'DELETE',
+            }),
+        }),
+        checkQuizSubmission: builder.query<{ hasSubmitted: boolean }, { studentId: string; quizId: string }>({
+            query: ({studentId, quizId}) => ({
+                url: `/answers/check?studentId=${studentId}&quizId=${quizId}`,
+                method: 'GET',
             }),
         }),
     }),
@@ -56,6 +88,8 @@ export const quizApi = createApi({
 export const {
     useCreateQuizMutation,
     useGetAllQuizzesQuery,
-    useGetQuizWithQuestionsQuery,
+    useGetQuizByIdQuery,
+    useCheckQuizSubmissionQuery,
+    useUpdateQuizMutation,
     useDeleteQuizMutation,
 } = quizApi;

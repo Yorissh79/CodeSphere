@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { X, Clock, Check } from 'lucide-react';
+// TimeEditModal.tsx
+import {useState} from 'react';
+import {X, Clock, Check} from 'lucide-react';
 
 interface TimeEditModalProps {
     isOpen: boolean;
@@ -8,9 +9,10 @@ interface TimeEditModalProps {
     onSave: (newTime: number) => void;
 }
 
-const TimeEditModal: React.FC<TimeEditModalProps> = ({ isOpen, onClose, currentTime, onSave }) => {
+const TimeEditModal: React.FC<TimeEditModalProps> = ({isOpen, onClose, currentTime, onSave}) => {
     const [newTime, setNewTime] = useState(currentTime);
 
+    // [Highlighted: Lines 13-19] Save and close handlers with validation
     const handleSave = () => {
         if (newTime && newTime > 0 && newTime <= 300) {
             onSave(newTime);
@@ -27,12 +29,14 @@ const TimeEditModal: React.FC<TimeEditModalProps> = ({ isOpen, onClose, currentT
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md border border-gray-100 dark:border-gray-700 transform transition-all duration-200">
+            <div
+                className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md border border-gray-100 dark:border-gray-700 transform transition-all duration-200">
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
                     <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center">
-                            <Clock className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                        <div
+                            className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center">
+                            <Clock className="w-5 h-5 text-purple-600 dark:text-purple-400"/>
                         </div>
                         <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
                             Edit Time Limit
@@ -42,14 +46,15 @@ const TimeEditModal: React.FC<TimeEditModalProps> = ({ isOpen, onClose, currentT
                         onClick={handleClose}
                         className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
                     >
-                        <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                        <X className="w-5 h-5 text-gray-500 dark:text-gray-400"/>
                     </button>
                 </div>
 
                 {/* Content */}
                 <div className="p-6 space-y-6">
                     <div>
-                        <label htmlFor="timeInput" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                        <label htmlFor="timeInput"
+                               className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
                             Time Limit (minutes)
                         </label>
                         <input
@@ -92,7 +97,8 @@ const TimeEditModal: React.FC<TimeEditModalProps> = ({ isOpen, onClose, currentT
                 </div>
 
                 {/* Footer */}
-                <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200 dark:border-gray-700">
+                <div
+                    className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200 dark:border-gray-700">
                     <button
                         onClick={handleClose}
                         className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
@@ -104,7 +110,7 @@ const TimeEditModal: React.FC<TimeEditModalProps> = ({ isOpen, onClose, currentT
                         disabled={!newTime || newTime <= 0 || newTime > 300}
                         className="flex items-center px-4 py-2 bg-purple-500 hover:bg-purple-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg transition-colors duration-200"
                     >
-                        <Check className="w-4 h-4 mr-2" />
+                        <Check className="w-4 h-4 mr-2"/>
                         Save Changes
                     </button>
                 </div>

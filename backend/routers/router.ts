@@ -54,8 +54,10 @@ import {
 import {
     createQuiz,
     getAllQuizzes,
-    getQuizWithQuestions,
     deleteQuiz,
+    getQuizById,
+    updateQuiz,
+    checkQuizSubmission,
 } from "../controllers/quizController";
 
 import {
@@ -119,9 +121,11 @@ router.delete("/misses/:missId", deleteMiss);
 // Quiz Routes
 router.post("/quiz/create", createQuiz);
 router.get("/quiz/all", getAllQuizzes);
-router.get("/quiz/:id", getQuizWithQuestions);
+router.get("/quiz/:id", getQuizById);
 router.delete("/quiz/:id", deleteQuiz);
 router.post("/quiz/answers", createAnswer)
+router.put("/quiz/update/:id", updateQuiz)
+router.get("/quiz/answers/check", checkQuizSubmission)
 
 // Question Routes
 router.post("/question/create", createQuestion);

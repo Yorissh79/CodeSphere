@@ -2,7 +2,7 @@ import {createApi, fetchBaseQuery} from "@reduxjs/toolkit/query/react";
 
 interface AuthCheckResponse {
     user: {
-        id: string;
+        _id: string;
         name: string;
         email: string;
         surname: string
@@ -54,4 +54,4 @@ export const authCheck = createApi({
     }),
 });
 
-export const { useCheckAuthQuery, useCheckTeacherAuthQuery, useCheckAdminAuthQuery } = authCheck;
+export const {useCheckAuthQuery, useCheckTeacherAuthQuery, useCheckAdminAuthQuery} = authCheck;

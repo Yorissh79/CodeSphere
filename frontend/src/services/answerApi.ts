@@ -31,9 +31,6 @@ export const quizApi = createApi({
         credentials: 'include',
     }),
     endpoints: (builder) => ({
-        getQuizById: builder.query<Quiz, string>({
-            query: (id) => `/quizzes/${id}`,
-        }),
         submitAnswers: builder.mutation<void, AnswerPayload[]>({
             query: (answers) => ({
                 url: "/answers",
@@ -44,4 +41,4 @@ export const quizApi = createApi({
     }),
 });
 
-export const { useGetQuizByIdQuery, useSubmitAnswersMutation } = quizApi;
+export const { useSubmitAnswersMutation } = quizApi;
