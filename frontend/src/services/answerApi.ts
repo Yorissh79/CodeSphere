@@ -1,4 +1,4 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import {createApi, fetchBaseQuery} from "@reduxjs/toolkit/query/react";
 
 export interface Question {
     _id: string;
@@ -16,6 +16,7 @@ export interface Quiz {
 }
 
 export interface AnswerPayload {
+    _id?: string;
     studentId: string;
     quizId: string;
     questionId: string;
@@ -24,12 +25,13 @@ export interface AnswerPayload {
     changedCount: number;
 }
 
-export const quizApi = createApi({
-    reducerPath: 'quizApi',
+export const answerApi = createApi({
+    reducerPath: 'answerApi',
     baseQuery: fetchBaseQuery({
         baseUrl: 'http://localhost:3001/quiz/',
         credentials: 'include',
     }),
+    tagTypes: ['Answers'],
     endpoints: (builder) => ({
         submitAnswers: builder.mutation<void, AnswerPayload[]>({
             query: (answers) => ({
@@ -37,8 +39,16 @@ export const quizApi = createApi({
                 method: "POST",
                 body: answers,
             }),
+            invalidatesTags: ['Answers'],
+        }),
+        getQuizAnswers: builder.query<AnswerPayload[], string>({
+            query: (quizId) => ({
+                url: `/answers/quiz/${quizId}`,
+                method: "GET",
+            }),
+            providesTags: (_result, _error, quizId) => [{type: 'Answers', id: quizId}],
         }),
     }),
 });
 
-export const { useSubmitAnswersMutation } = quizApi;
+export const {useSubmitAnswersMutation, useGetQuizAnswersQuery} = answerApi;

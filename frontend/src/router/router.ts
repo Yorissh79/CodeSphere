@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router-dom";
+import {createBrowserRouter} from "react-router-dom";
 import Layout from "../components/layout/Layout.tsx";
 import Signup from "../pages/signup/Signup.tsx";
 import SignupTeacher from "../pages/signup/SignupTeacher.tsx";
@@ -29,6 +29,7 @@ import MissesS from "../pages/student/misses/MissesS.tsx";
 import MissesA from "../pages/admin/misses/MissesA.tsx";
 import QuizA from "../pages/admin/quiz/QuizA.tsx";
 import QuizS from "../pages/student/quiz/QuizS.tsx";
+import QuizAnalysisPage from "../pages/teacher/teacherquizchecker/QuizAnalysisPage.tsx";
 
 export const router = createBrowserRouter([
     {
@@ -115,6 +116,10 @@ export const router = createBrowserRouter([
                     {
                         path: "quiz",
                         Component: QuizA
+                    },
+                    {
+                        path: "quizchecker",
+                        Component: QuizAnalysisPage
                     }
                 ]
             },

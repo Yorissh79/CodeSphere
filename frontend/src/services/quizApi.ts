@@ -10,6 +10,12 @@ interface Quiz {
     opened?: boolean;
 }
 
+interface SubmissionStatus {
+    studentId: string;
+    hasSubmitted: boolean;
+    submittedAt?: string;
+}
+
 interface CreateQuizRequest {
     title: string;
     timeLimit?: number;
@@ -76,9 +82,9 @@ export const quizApi = createApi({
                 method: 'DELETE',
             }),
         }),
-        checkQuizSubmission: builder.query<{ hasSubmitted: boolean }, { studentId: string; quizId: string }>({
-            query: ({studentId, quizId}) => ({
-                url: `/answers/check?studentId=${studentId}&quizId=${quizId}`,
+        getQuizSubmissions: builder.query<SubmissionStatus[], string>({
+            query: (quizId) => ({
+                url: `/submissions/quiz/${quizId}`,
                 method: 'GET',
             }),
         }),
@@ -89,7 +95,7 @@ export const {
     useCreateQuizMutation,
     useGetAllQuizzesQuery,
     useGetQuizByIdQuery,
-    useCheckQuizSubmissionQuery,
+    useGetQuizSubmissionsQuery,
     useUpdateQuizMutation,
     useDeleteQuizMutation,
 } = quizApi;

@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import quizModel from "../models/quizModel";
 import questionModel from "../models/questionModel";
-import answerModel from "../models/answerModel"; // Assumed model
 import { z } from "zod";
 import mongoose from "mongoose";
 
@@ -21,14 +20,7 @@ const updateQuizSchema = z.object({
     opened: z.boolean().optional(),
 });
 
-const checkSubmissionSchema = z.object({
-    studentId: z.string().refine((val) => mongoose.Types.ObjectId.isValid(val), {
-        message: "Invalid studentId",
-    }),
-    quizId: z.string().refine((val) => mongoose.Types.ObjectId.isValid(val), {
-        message: "Invalid quizId",
-    }),
-});
+
 
 export const updateQuiz = async (req: Request, res: Response): Promise<any> => {
     const result = updateQuizSchema.safeParse(req.body);
@@ -96,18 +88,3 @@ export const deleteQuiz = async (req: Request, res: Response): Promise<any> => {
     }
 };
 
-export const checkQuizSubmission = async (req: Request, res: Response): Promise<any> => {
-    const result = checkSubmissionSchema.safeParse(req.query);
-    if (!result.success) {
-        return res.status(400).json({ error: result.error });
-    }
-
-    const { studentId, quizId } = result.data;
-
-    try {
-        const exists = await answerModel.exists({ studentId, quizId });
-        res.status(200).json({ hasSubmitted: !!exists });
-    } catch (err) {
-        res.status(500).json({ error: "Failed to check quiz submission" });
-    }
-};

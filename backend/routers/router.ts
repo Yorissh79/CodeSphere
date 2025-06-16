@@ -57,7 +57,6 @@ import {
     deleteQuiz,
     getQuizById,
     updateQuiz,
-    checkQuizSubmission,
 } from "../controllers/quizController";
 
 import {
@@ -68,7 +67,9 @@ import {
 
 import {validTeacherOrAdmin} from "../middleware/validTeacherOrAdmin";
 import {studentValid} from "../middleware/studentValid";
-import {createAnswer} from "../controllers/answerController";
+import {createAnswer,
+        checkQuizSubmission,
+} from "../controllers/answerController";
 
 const router = express.Router();
 
@@ -125,7 +126,7 @@ router.get("/quiz/:id", getQuizById);
 router.delete("/quiz/:id", deleteQuiz);
 router.post("/quiz/answers", createAnswer)
 router.put("/quiz/update/:id", updateQuiz)
-router.get("/quiz/answers/check", checkQuizSubmission)
+router.get("/quiz/answers/quiz/:quizId", checkQuizSubmission)
 
 // Question Routes
 router.post("/question/create", createQuestion);
