@@ -1,10 +1,13 @@
-import { useState } from "react";
-import { motion } from "framer-motion";
+import {useState} from "react";
 import toast from "react-hot-toast";
-import { ArrowLeft, Download, Edit } from "lucide-react";
-import { useGetAllUsersQuery } from "../../../services/userApi";
-import { useAddMissMutation, useGetAllMissesQuery, useUpdateMissMutation } from "../../../services/missesApi";
-import { Link } from "react-router-dom";
+import {ArrowLeft} from "lucide-react";
+import {useGetAllUsersQuery} from "../../../services/userApi";
+import {useAddMissMutation, useGetAllMissesQuery, useUpdateMissMutation} from "../../../services/missesApi";
+import {Link} from "react-router-dom";
+import GroupSelector from "./components/GroupSelector";
+import StudentList from "./components/StudentList";
+import MissDetailsModal from "./components/MissDetailsModal";
+import ActionButtons from "./components/ActionButtons";
 
 const MissesT = () => {
     const [selectedGroup, setSelectedGroup] = useState("");
@@ -15,8 +18,8 @@ const MissesT = () => {
     const TOTAL_HOURS = 6;
     const MAX_MISS_HOURS = 24;
 
-    const { data: usersData, isLoading, error } = useGetAllUsersQuery({ role: "student" });
-    const { data: missesData, refetch: refetchMisses } = useGetAllMissesQuery({ page: 1, limit: 1000 });
+    const {data: usersData, isLoading, error} = useGetAllUsersQuery({role: "student"});
+    const {data: missesData, refetch: refetchMisses} = useGetAllMissesQuery({page: 1, limit: 1000});
     const [addMiss] = useAddMissMutation();
     const [updateMiss] = useUpdateMissMutation();
 
@@ -71,7 +74,7 @@ const MissesT = () => {
     };
 
     const markSingle = (studentId: string, hours: number) => {
-        setAttendance((prev) => ({ ...prev, [studentId]: hours }));
+        setAttendance((prev) => ({...prev, [studentId]: hours}));
         const name = students.find((s) => s.id === studentId)?.name;
         toast.success(`${name} marked as ${hours} hours present`);
     };
@@ -123,7 +126,7 @@ const MissesT = () => {
 
         try {
             const csvContent = csvRows.map((row) => row.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(",")).join("\n");
-            const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+            const blob = new Blob([csvContent], {type: "text/csv;charset=utf-8;"});
             const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
             link.setAttribute("href", url);
@@ -136,10 +139,6 @@ const MissesT = () => {
         } catch {
             toast.error("Error exporting CSV");
         }
-    };
-
-    const handleEditMiss = (missId: string, hoursPresent: number) => {
-        setEditingMiss({ missId, hoursPresent });
     };
 
     const handleSaveEdit = async (missId: string, hoursPresent: number) => {
@@ -169,23 +168,7 @@ const MissesT = () => {
             </h2>
 
             {!selectedGroup ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-                    {groups.map((group) => (
-                        <motion.div
-                            key={group.id}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.3 }}
-                        >
-                            <div
-                                onClick={() => setSelectedGroup(group.id)}
-                                className="cursor-pointer border p-6 rounded-lg text-center hover:shadow-md hover:scale-105 transition-all duration-300 dark:border-gray-700"
-                            >
-                                <h3 className="text-lg font-semibold text-gray-800 dark:text-white">{group.name}</h3>
-                            </div>
-                        </motion.div>
-                    ))}
-                </div>
+                <GroupSelector groups={groups} onSelectGroup={setSelectedGroup}/>
             ) : (
                 <div className="max-w-6xl mx-auto space-y-8">
                     <div className="flex justify-start">
@@ -193,7 +176,7 @@ const MissesT = () => {
                             onClick={() => setSelectedGroup("")}
                             className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white rounded-md mb-4 shadow hover:shadow-md transition"
                         >
-                            <ArrowLeft size={18} />
+                            <ArrowLeft size={18}/>
                             Back to Groups
                         </button>
                     </div>
@@ -202,133 +185,45 @@ const MissesT = () => {
                         <h3 className="text-xl font-semibold text-gray-800 dark:text-white">
                             Students in {selectedGroup}
                         </h3>
-                        <div className="space-x-2 space-y-2">
-                            <button onClick={() => markAll(TOTAL_HOURS)} className="px-4 py-2 bg-green-500 text-white rounded-md">
-                                All Present (6h)
-                            </button>
-                            <button onClick={() => markAll(0)} className="px-4 py-2 bg-red-500 text-white rounded-md">
-                                All Miss (0h)
-                            </button>
-                            <button
-                                onClick={handleSendAllAttendance}
-                                disabled={isSending}
-                                className={`px-4 py-2 rounded-md text-white ${isSending ? 'bg-blue-300 cursor-not-allowed' : 'bg-blue-500'}`}
-                            >
-                                {isSending ? 'Sending...' : 'Send All Attendance'}
-                            </button>
-                            <button onClick={handleExportCSV} className="px-4 py-2 bg-purple-500 text-white rounded-md flex items-center gap-2">
-                                <Download size={18} />
-                                Export CSV
-                            </button>
-                        </div>
+                        <ActionButtons
+                            markAll={markAll}
+                            handleSendAllAttendance={handleSendAllAttendance}
+                            handleExportCSV={handleExportCSV}
+                            isSending={isSending}
+                            TOTAL_HOURS={TOTAL_HOURS}
+                        />
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {students.map((student) => (
-                            <div key={student.id} className="border rounded-lg p-4 dark:border-gray-700 bg-white dark:bg-gray-800">
-                                <div className="flex justify-between items-center">
-                                    <span className="text-gray-800 dark:text-white font-medium">{student.name}</span>
-                                    <div className="space-x-2 flex items-center">
-                                        <select
-                                            value={attendance[student.id] ?? ""}
-                                            onChange={(e) => markSingle(student.id, Number(e.target.value))}
-                                            className="p-2 rounded-md bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white"
-                                        >
-                                            <option value="" disabled>Select Hours</option>
-                                            {[...Array(TOTAL_HOURS + 1)].map((_, i) => (
-                                                <option key={i} value={i}>{i} hours</option>
-                                            ))}
-                                        </select>
-                                        <button
-                                            onClick={() => setModalStudent(student)}
-                                            className={`px-2 py-1 text-white rounded-md text-sm ${
-                                                getMissHours(student.id) === MAX_MISS_HOURS ? 'bg-red-500' : 'bg-purple-500'
-                                            }`}
-                                        >
-                                            Misses: {getMissHours(student.id)}/{MAX_MISS_HOURS}h
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+                    <StudentList
+                        students={students}
+                        attendance={attendance}
+                        markSingle={markSingle}
+                        getMissHours={getMissHours}
+                        setModalStudent={setModalStudent}
+                        TOTAL_HOURS={TOTAL_HOURS}
+                        MAX_MISS_HOURS={MAX_MISS_HOURS}
+                    />
                 </div>
             )}
 
-            {modalStudent && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
-                        <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-white">
-                            {modalStudent.name}'s Missed Hours
-                        </h3>
-                        <p className="text-gray-700 dark:text-gray-200 mb-2">
-                            Total Missed: {getMissHours(modalStudent.id)}/{MAX_MISS_HOURS} hours
-                        </p>
-                        <ul className="space-y-2 max-h-60 overflow-y-auto text-gray-700 dark:text-gray-200">
-                            {getMissDetails(modalStudent.id).length > 0 ? (
-                                getMissDetails(modalStudent.id).map((detail, i) => (
-                                    <li key={i} className="border-b pb-2 dark:border-gray-700 flex justify-between items-center">
-                                        <span>
-                                            {detail.date}: {detail.hoursMissed} hours missed
-                                        </span>
-                                        {editingMiss?.missId === detail.missId ? (
-                                            <div className="flex items-center space-x-2">
-                                                <select
-                                                    value={editingMiss.hoursPresent}
-                                                    onChange={(e) => setEditingMiss({ ...editingMiss, hoursPresent: Number(e.target.value) })}
-                                                    className="p-1 rounded-md bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white text-sm"
-                                                >
-                                                    {[...Array(TOTAL_HOURS + 1)].map((_, j) => (
-                                                        <option key={j} value={j}>{j} hours present</option>
-                                                    ))}
-                                                </select>
-                                                <button
-                                                    onClick={() => handleSaveEdit(detail.missId, editingMiss.hoursPresent)}
-                                                    className="px-2 py-1 bg-green-500 text-white rounded-md text-sm"
-                                                >
-                                                    Save
-                                                </button>
-                                                <button
-                                                    onClick={() => setEditingMiss(null)}
-                                                    className="px-2 py-1 bg-red-500 text-white rounded-md text-sm"
-                                                >
-                                                    Cancel
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <button
-                                                onClick={() => handleEditMiss(detail.missId, detail.hoursPresent)}
-                                                className="px-2 py-1 bg-blue-500 text-white rounded-md text-sm flex items-center gap-1"
-                                            >
-                                                <Edit size={14} />
-                                                Edit
-                                            </button>
-                                        )}
-                                    </li>
-                                ))
-                            ) : (
-                                <li>No missed hours</li>
-                            )}
-                        </ul>
-                        <button
-                            onClick={() => {
-                                setModalStudent(null);
-                                setEditingMiss(null);
-                            }}
-                            className="mt-4 px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-white rounded-md"
-                        >
-                            Close
-                        </button>
-                    </div>
-                </div>
-            )}
+            <MissDetailsModal
+                modalStudent={modalStudent}
+                getMissHours={getMissHours}
+                getMissDetails={getMissDetails}
+                editingMiss={editingMiss}
+                setEditingMiss={setEditingMiss}
+                handleSaveEdit={handleSaveEdit}
+                setModalStudent={setModalStudent}
+                TOTAL_HOURS={TOTAL_HOURS}
+                MAX_MISS_HOURS={MAX_MISS_HOURS}
+            />
 
             <div className="w-full flex justify-center mt-4">
                 <Link
                     to="/user/teacher"
                     className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white rounded-md shadow hover:shadow-md transition duration-200"
                 >
-                    <ArrowLeft size={18} />
+                    <ArrowLeft size={18}/>
                     Back to Main Page
                 </Link>
             </div>
