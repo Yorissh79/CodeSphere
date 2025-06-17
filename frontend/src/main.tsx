@@ -1,12 +1,12 @@
-import { StrictMode } from 'react';
-import { createRoot } from 'react-dom/client';
+import {StrictMode} from 'react';
+import {createRoot} from 'react-dom/client';
 import './index.css';
-import { RouterProvider } from 'react-router-dom';
-import { router } from './router/router';
-import { Provider } from 'react-redux';
-import { store } from './store/store';
-import { GoogleOAuthProvider } from '@react-oauth/google';
-import { Toaster } from 'react-hot-toast';
+import {RouterProvider} from 'react-router-dom';
+import {router} from './router/router';
+import {Provider} from 'react-redux';
+import {store} from './store/store';
+import {GoogleOAuthProvider} from '@react-oauth/google';
+import {Toaster} from 'react-hot-toast';
 
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 if (!googleClientId) {
@@ -18,8 +18,8 @@ createRoot(document.getElementById('root')!).render(
         <GoogleOAuthProvider clientId={googleClientId || ''}>
             <Provider store={store}>
                 <>
-                    <RouterProvider router={router} />
-                    <Toaster position="top-right" reverseOrder={false} /> {/* ✅ Add this */}
+                    <RouterProvider router={router}/>
+                    <Toaster position="top-right" reverseOrder={false}/>
                 </>
             </Provider>
         </GoogleOAuthProvider>

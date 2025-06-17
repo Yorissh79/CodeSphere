@@ -26,7 +26,7 @@ const QuizList: React.FC<QuizListProps> = ({
                                            }) => {
     return (
         <div
-            className="w-full max-w-2xl bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-100 dark:border-gray-700">
+            className="w-full max-w-2xl  bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-100 dark:border-gray-700">
             <div className="flex items-center justify-center mb-6">
                 <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Existing Quizzes</h3>
             </div>

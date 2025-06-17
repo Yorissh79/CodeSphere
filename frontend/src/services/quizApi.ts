@@ -22,17 +22,17 @@ interface CreateQuizRequest {
     description?: string;
     tags?: string[];
     opened: boolean;
-    group?: string;
+    groups?: string;
 }
 
 interface UpdateQuizRequest {
-    id: string;
+    id: string | null;
     title?: string;
     timeLimit?: number;
     description?: string;
     tags?: string[];
     opened?: boolean;
-    group?: string;
+    groups?: string;
 }
 
 interface CreateQuizResponse {

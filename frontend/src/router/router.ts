@@ -30,6 +30,7 @@ import MissesA from "../pages/admin/misses/MissesA.tsx";
 import QuizA from "../pages/admin/quiz/QuizA.tsx";
 import QuizS from "../pages/student/quiz/QuizS.tsx";
 import QuizAnalysisPage from "../pages/teacher/teacherquizchecker/QuizAnalysisPage.tsx";
+import QuizT from "../pages/teacher/quiz/QuizT.tsx";
 
 export const router = createBrowserRouter([
     {
@@ -115,7 +116,7 @@ export const router = createBrowserRouter([
                     },
                     {
                         path: "quiz",
-                        Component: QuizA
+                        Component: QuizT
                     },
                     {
                         path: "quizchecker",

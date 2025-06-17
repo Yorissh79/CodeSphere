@@ -7,8 +7,8 @@ interface QuizCreatorProps {
     setQuizTitle: Dispatch<SetStateAction<string>>;
     quizTime: number;
     setQuizTime: Dispatch<SetStateAction<number>>;
-    group: string;
-    setGroup: Dispatch<SetStateAction<string>>;
+    groups: string[];
+    setGroups: Dispatch<SetStateAction<string[]>>;
     isCreatingQuiz: boolean;
     handleCreateQuiz: () => void;
 }
@@ -18,18 +18,15 @@ const QuizCreator: React.FC<QuizCreatorProps> = ({
                                                      setQuizTitle,
                                                      quizTime,
                                                      setQuizTime,
-                                                     group,
-                                                     setGroup,
+                                                     groups,
+                                                     setGroups,
                                                      isCreatingQuiz,
                                                      handleCreateQuiz,
                                                  }) => {
-    // Local state to manage input value during typing
     const [inputTime, setInputTime] = useState<string>(quizTime.toString());
 
-    // Fetch groups
-    const {data: groups, isLoading: isLoadingGroups, isError: isGroupsError} = useGetAllGroupsQuery({});
+    const {data: groupData, isLoading: isLoadingGroups, isError: isGroupsError} = useGetAllGroupsQuery({});
 
-    // Sync local input with prop when quizTime changes
     useEffect(() => {
         setInputTime(quizTime.toString());
     }, [quizTime]);
@@ -58,10 +55,14 @@ const QuizCreator: React.FC<QuizCreatorProps> = ({
         }
     };
 
-    // Dynamic group options
+    const handleGroupChange = (e: ChangeEvent<HTMLSelectElement>) => {
+        const selectedOptions = Array.from(e.target.selectedOptions).map((option) => option.value);
+        setGroups(selectedOptions.filter((value) => value !== ""));
+    };
+
     const groupOptions = [
-        {value: "", label: "Select a group"},
-        ...(groups?.map((g: { _id: string; group: string }) => ({
+        {value: "", label: "Select groups"},
+        ...(groupData?.map((g: { _id: string; group: string }) => ({
             value: g._id,
             label: g.group,
         })) || []),
@@ -69,10 +70,10 @@ const QuizCreator: React.FC<QuizCreatorProps> = ({
 
     return (
         <div className="flex flex-col items-center justify-center space-y-8">
-            {/* Header */}
             <div className="text-center space-y-4">
                 <div
-                    className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full shadow-lg mb-4">
+                    className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full shadow-lg mb-4"
+                >
                     <FileText className="w-8 h-8 text-white"/>
                 </div>
                 <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
@@ -83,9 +84,9 @@ const QuizCreator: React.FC<QuizCreatorProps> = ({
                 </p>
             </div>
 
-            {/* Create Quiz Form */}
             <div
-                className="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-100 dark:border-gray-700">
+                className="w-full max-w-md h-full bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-100 dark:border-gray-700"
+            >
                 <div className="space-y-6">
                     <div>
                         <label
@@ -126,30 +127,32 @@ const QuizCreator: React.FC<QuizCreatorProps> = ({
                     </div>
                     <div>
                         <label
-                            htmlFor="group"
+                            htmlFor="groups"
                             className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3"
                         >
-                            Group
+                            Groups
                         </label>
                         {isLoadingGroups ? (
                             <div className="flex items-center justify-center py-2">
                                 <div
-                                    className="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-500 mr-2"></div>
+                                    className="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-500 mr-2"
+                                ></div>
                                 <span className="text-gray-600 dark:text-gray-400">Loading groups...</span>
                             </div>
                         ) : isGroupsError ? (
                             <p className="text-red-600 dark:text-red-400 text-sm">Failed to load groups</p>
                         ) : (
                             <select
-                                id="group"
+                                id="groups"
+                                multiple
                                 className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 text-gray-900 dark:text-white"
-                                value={group}
-                                onChange={(e: ChangeEvent<HTMLSelectElement>) => setGroup(e.target.value)}
+                                value={groups}
+                                onChange={handleGroupChange}
                                 disabled={isCreatingQuiz}
                             >
                                 {groupOptions.map((option) => (
                                     <option key={option.value} value={option.value}>
-                                        {option.label}
+                                        {option.value === "" ? "Select groups" : option.label}
                                     </option>
                                 ))}
                             </select>
