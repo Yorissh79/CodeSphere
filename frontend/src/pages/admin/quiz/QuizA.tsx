@@ -281,10 +281,10 @@ const QuizA = () => {
         }
     };
 
-    const handleCsvImport = () => {
-        if (!fileInputRef.current) return;
-        fileInputRef.current.click();
-    };
+    // const handleCsvImport = () => {
+    //     if (!fileInputRef.current) return;
+    //     fileInputRef.current.click();
+    // };
 
     const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];

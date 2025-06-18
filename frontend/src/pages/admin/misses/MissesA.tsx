@@ -1,10 +1,15 @@
-import { useState } from "react";
-import { motion } from "framer-motion";
+import {useState} from "react";
+import {motion} from "framer-motion";
 import toast from "react-hot-toast";
-import { ArrowLeft, Download, Edit } from "lucide-react";
-import { useGetAllUsersQuery } from "../../../services/userApi";
-import { useAddMissMutation, useGetAllMissesQuery, useUpdateMissMutation } from "../../../services/missesApi";
-import { Link } from "react-router-dom";
+import {ArrowLeft, Download, Edit, Trash2} from "lucide-react";
+import {useGetAllUsersQuery} from "../../../services/userApi";
+import {
+    useAddMissMutation,
+    useGetAllMissesQuery,
+    useUpdateMissMutation,
+    useDeleteMissMutation
+} from "../../../services/missesApi";
+import {Link} from "react-router-dom";
 
 const MissesA = () => {
     const [selectedGroup, setSelectedGroup] = useState("");
@@ -15,10 +20,11 @@ const MissesA = () => {
     const TOTAL_HOURS = 6;
     const MAX_MISS_HOURS = 24;
 
-    const { data: usersData, isLoading, error } = useGetAllUsersQuery({ role: "student" });
-    const { data: missesData, refetch: refetchMisses } = useGetAllMissesQuery({ page: 1, limit: 1000 });
+    const {data: usersData, isLoading, error} = useGetAllUsersQuery({role: "student"});
+    const {data: missesData, refetch: refetchMisses} = useGetAllMissesQuery({page: 1, limit: 1000});
     const [addMiss] = useAddMissMutation();
     const [updateMiss] = useUpdateMissMutation();
+    const [deleteMiss, {isLoading: isDeleting}] = useDeleteMissMutation();
 
     const users = Array.isArray(usersData) ? usersData : [];
 
@@ -71,7 +77,7 @@ const MissesA = () => {
     };
 
     const markSingle = (studentId: string, hours: number) => {
-        setAttendance((prev) => ({ ...prev, [studentId]: hours }));
+        setAttendance((prev) => ({...prev, [studentId]: hours}));
         const name = students.find((s) => s.id === studentId)?.name;
         toast.success(`${name} marked as ${hours} hours present`);
     };
@@ -123,7 +129,7 @@ const MissesA = () => {
 
         try {
             const csvContent = csvRows.map((row) => row.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(",")).join("\n");
-            const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+            const blob = new Blob([csvContent], {type: "text/csv;charset=utf-8;"});
             const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
             link.setAttribute("href", url);
@@ -139,7 +145,7 @@ const MissesA = () => {
     };
 
     const handleEditMiss = (missId: string, hoursPresent: number) => {
-        setEditingMiss({ missId, hoursPresent });
+        setEditingMiss({missId, hoursPresent});
     };
 
     const handleSaveEdit = async (missId: string, hoursPresent: number) => {
@@ -159,6 +165,18 @@ const MissesA = () => {
         }
     };
 
+    const handleDeleteMiss = async (missId: string) => {
+        if (!window.confirm("Are you sure you want to delete this miss record?")) return;
+
+        try {
+            await deleteMiss(missId).unwrap();
+            toast.success("Miss record deleted successfully");
+            refetchMisses();
+        } catch {
+            toast.error("Error deleting miss record");
+        }
+    };
+
     if (isLoading) return <div className="text-center">Loading...</div>;
     if (error) return <div className="text-center text-red-500">Error loading students.</div>;
 
@@ -173,9 +191,9 @@ const MissesA = () => {
                     {groups.map((group) => (
                         <motion.div
                             key={group.id}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.3 }}
+                            initial={{opacity: 0, y: 20}}
+                            animate={{opacity: 1, y: 0}}
+                            transition={{duration: 0.3}}
                         >
                             <div
                                 onClick={() => setSelectedGroup(group.id)}
@@ -193,7 +211,7 @@ const MissesA = () => {
                             onClick={() => setSelectedGroup("")}
                             className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white rounded-md mb-4 shadow hover:shadow-md transition"
                         >
-                            <ArrowLeft size={18} />
+                            <ArrowLeft size={18}/>
                             Back to Groups
                         </button>
                     </div>
@@ -203,7 +221,8 @@ const MissesA = () => {
                             Students in {selectedGroup}
                         </h3>
                         <div className="space-x-2 space-y-2">
-                            <button onClick={() => markAll(TOTAL_HOURS)} className="px-4 py-2 bg-green-500 text-white rounded-md">
+                            <button onClick={() => markAll(TOTAL_HOURS)}
+                                    className="px-4 py-2 bg-green-500 text-white rounded-md">
                                 All Present (6h)
                             </button>
                             <button onClick={() => markAll(0)} className="px-4 py-2 bg-red-500 text-white rounded-md">
@@ -216,8 +235,9 @@ const MissesA = () => {
                             >
                                 {isSending ? 'Sending...' : 'Send All Attendance'}
                             </button>
-                            <button onClick={handleExportCSV} className="px-4 py-2 bg-purple-500 text-white rounded-md flex items-center gap-2">
-                                <Download size={18} />
+                            <button onClick={handleExportCSV}
+                                    className="px-4 py-2 bg-purple-500 text-white rounded-md flex items-center gap-2">
+                                <Download size={18}/>
                                 Export CSV
                             </button>
                         </div>
@@ -225,7 +245,8 @@ const MissesA = () => {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {students.map((student) => (
-                            <div key={student.id} className="border rounded-lg p-4 dark:border-gray-700 bg-white dark:bg-gray-800">
+                            <div key={student.id}
+                                 className="border rounded-lg p-4 dark:border-gray-700 bg-white dark:bg-gray-800">
                                 <div className="flex justify-between items-center">
                                     <span className="text-gray-800 dark:text-white font-medium">{student.name}</span>
                                     <div className="space-x-2 flex items-center">
@@ -267,43 +288,71 @@ const MissesA = () => {
                         <ul className="space-y-2 max-h-60 overflow-y-auto text-gray-700 dark:text-gray-200">
                             {getMissDetails(modalStudent.id).length > 0 ? (
                                 getMissDetails(modalStudent.id).map((detail, i) => (
-                                    <li key={i} className="border-b pb-2 dark:border-gray-700 flex justify-between items-center">
+                                    <li key={i}
+                                        className="border-b pb-2 dark:border-gray-700 flex justify-between items-center">
                                         <span>
                                             {detail.date}: {detail.hoursMissed} hours missed
                                         </span>
-                                        {editingMiss?.missId === detail.missId ? (
-                                            <div className="flex items-center space-x-2">
-                                                <select
-                                                    value={editingMiss.hoursPresent}
-                                                    onChange={(e) => setEditingMiss({ ...editingMiss, hoursPresent: Number(e.target.value) })}
-                                                    className="p-1 rounded-md bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white text-sm"
-                                                >
-                                                    {[...Array(TOTAL_HOURS + 1)].map((_, j) => (
-                                                        <option key={j} value={j}>{j} hours present</option>
-                                                    ))}
-                                                </select>
-                                                <button
-                                                    onClick={() => handleSaveEdit(detail.missId, editingMiss.hoursPresent)}
-                                                    className="px-2 py-1 bg-green-500 text-white rounded-md text-sm"
-                                                >
-                                                    Save
-                                                </button>
-                                                <button
-                                                    onClick={() => setEditingMiss(null)}
-                                                    className="px-2 py-1 bg-red-500 text-white rounded-md text-sm"
-                                                >
-                                                    Cancel
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <button
-                                                onClick={() => handleEditMiss(detail.missId, detail.hoursPresent)}
-                                                className="px-2 py-1 bg-blue-500 text-white rounded-md text-sm flex items-center gap-1"
-                                            >
-                                                <Edit size={14} />
-                                                Edit
-                                            </button>
-                                        )}
+                                        <div className="flex items-center space-x-2">
+                                            {editingMiss?.missId === detail.missId ? (
+                                                <div className="flex items-center space-x-2">
+                                                    <select
+                                                        value={editingMiss.hoursPresent}
+                                                        onChange={(e) => setEditingMiss({
+                                                            ...editingMiss,
+                                                            hoursPresent: Number(e.target.value)
+                                                        })}
+                                                        className="p-1 rounded-md bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white text-sm"
+                                                    >
+                                                        {[...Array(TOTAL_HOURS + 1)].map((_, j) => (
+                                                            <option key={j} value={j}>{j} hours present</option>
+                                                        ))}
+                                                    </select>
+                                                    <button
+                                                        onClick={() => handleSaveEdit(detail.missId, editingMiss.hoursPresent)}
+                                                        className="px-2 py-1 bg-green-500 text-white rounded-md text-sm"
+                                                    >
+                                                        Save
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setEditingMiss(null)}
+                                                        className="px-2 py-1 bg-red-500 text-white rounded-md text-sm"
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <button
+                                                        onClick={() => handleEditMiss(detail.missId, detail.hoursPresent)}
+                                                        className="px-2 py-1 bg-blue-500 text-white rounded-md text-sm flex items-center gap-1"
+                                                    >
+                                                        <Edit size={14}/>
+                                                        Edit
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteMiss(detail.missId)}
+                                                        disabled={isDeleting}
+                                                        className={`px-2 py-1 text-white rounded-md text-sm flex items-center gap-1 ${
+                                                            isDeleting ? 'bg-red-300 cursor-not-allowed' : 'bg-red-500 hover:bg-red-600'
+                                                        }`}
+                                                    >
+                                                        {isDeleting ? (
+                                                            <svg className="animate-spin h-4 w-4 text-white"
+                                                                 viewBox="0 0 24 24">
+                                                                <circle className="opacity-25" cx="12" cy="12" r="10"
+                                                                        stroke="currentColor" strokeWidth="4"/>
+                                                                <path className="opacity-75" fill="currentColor"
+                                                                      d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/>
+                                                            </svg>
+                                                        ) : (
+                                                            <Trash2 size={14}/>
+                                                        )}
+                                                        Delete
+                                                    </button>
+                                                </>
+                                            )}
+                                        </div>
                                     </li>
                                 ))
                             ) : (
@@ -328,7 +377,7 @@ const MissesA = () => {
                     to="/user/admin"
                     className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white rounded-md shadow hover:shadow-md transition duration-200"
                 >
-                    <ArrowLeft size={18} />
+                    <ArrowLeft size={18}/>
                     Back to Admin Dashboard
                 </Link>
             </div>

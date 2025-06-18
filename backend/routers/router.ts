@@ -117,7 +117,7 @@ router.get("/misses/student/:studentId", getStudentMisses);
 router.get("/misses/all", validTeacherOrAdmin, getAllMisses);
 router.get("/misses/my", studentValid, getMyMisses);
 router.put("/misses/update/:missId", validTeacherOrAdmin, updateMiss);
-router.delete("/misses/:missId", deleteMiss);
+router.delete("/misses/delete/:missId", validTeacherOrAdmin, deleteMiss);
 
 // Quiz Routes
 router.post("/quiz/create", createQuiz);

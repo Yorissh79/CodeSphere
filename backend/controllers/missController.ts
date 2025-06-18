@@ -177,7 +177,7 @@ export const deleteMiss = async (req: Request, res: Response): Promise<any> => {
     const { missId } = req.params;
 
     if (!user) return res.status(401).json({ success: false, message: "Authentication required" });
-    if (user.role !== "teacher") return res.status(403).json({ success: false, message: "Only teachers can delete misses" });
+    if (user.role !== "teacher" && user.role !== "admin") return res.status(403).json({ success: false, message: "Only teachers can delete misses" });
     if (!mongoose.Types.ObjectId.isValid(missId)) return res.status(400).json({ success: false, message: "Invalid miss ID format" });
 
     try {
