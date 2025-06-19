@@ -93,7 +93,7 @@ router.delete("/teacher/delete/:id", deleteTeacher);
 router.get("/teacher/gets", getAllTeachers);
 
 // Admin Routes
-router.post("/admin/create", createAdmin);
+router.post("/admin/create", checkAdminAuth, createAdmin);
 router.post("/admin/login", loginAdmin);
 router.post("/admin/logout", logoutAdmin);
 router.get("/auth/admin/check", checkAdminAuth);
@@ -120,18 +120,18 @@ router.put("/misses/update/:missId", validTeacherOrAdmin, updateMiss);
 router.delete("/misses/delete/:missId", validTeacherOrAdmin, deleteMiss);
 
 // Quiz Routes
-router.post("/quiz/create", createQuiz);
+router.post("/quiz/create", validTeacherOrAdmin, createQuiz);
 router.get("/quiz/all", getAllQuizzes);
 router.get("/quiz/:id", getQuizById);
-router.delete("/quiz/:id", deleteQuiz);
-router.post("/quiz/answers", createAnswer)
-router.put("/quiz/update/:id", updateQuiz)
+router.delete("/quiz/:id", validTeacherOrAdmin, deleteQuiz);
+router.post("/quiz/answers", validTeacherOrAdmin, createAnswer)
+router.put("/quiz/update/:id", validTeacherOrAdmin, updateQuiz)
 router.get("/quiz/answers/quiz/:quizId", checkQuizSubmission)
 
 // Question Routes
-router.post("/question/create", createQuestion);
-router.get("/question/quiz/:quizId", getQuestionsByQuiz);
-router.delete("/question/:id", deleteQuestion);
+router.post("/question/create", validTeacherOrAdmin, createQuestion);
+router.get("/question/quiz/:quizId", validTeacherOrAdmin, getQuestionsByQuiz);
+router.delete("/question/:id", validTeacherOrAdmin, deleteQuestion);
 
 
 export default router;

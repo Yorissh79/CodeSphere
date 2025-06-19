@@ -60,7 +60,7 @@ export const createQuiz = async (req: Request, res: Response): Promise<any> => {
 
 export const getAllQuizzes = async (_req: Request, res: Response) => {
     try {
-        const quizzes = await quizModel.find().select("title tags timeLimit opened");
+        const quizzes = await quizModel.find().select("title tags timeLimit opened groups");
         res.status(200).json(quizzes);
     } catch (err) {
         res.status(500).json({ error: "Failed to fetch quizzes" });

@@ -8,6 +8,7 @@ interface Quiz {
     tags?: string[];
     timeLimit: number;
     opened?: boolean;
+    groups?: string[];
 }
 
 interface SubmissionStatus {
@@ -22,7 +23,7 @@ interface CreateQuizRequest {
     description?: string;
     tags?: string[];
     opened: boolean;
-    groups?: string;
+    groups?: string[];
 }
 
 interface UpdateQuizRequest {
@@ -32,7 +33,7 @@ interface UpdateQuizRequest {
     description?: string;
     tags?: string[];
     opened?: boolean;
-    groups?: string;
+    groups?: string[];
 }
 
 interface CreateQuizResponse {

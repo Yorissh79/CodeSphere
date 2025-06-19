@@ -23,7 +23,7 @@ import {useGetAllGroupsQuery} from '../../../services/groupApi';
 
 interface Group {
     _id: string;
-    group: string;
+    groups: string[];
 }
 
 interface QuestionPayload {
@@ -63,9 +63,8 @@ const QuizT: React.FC = () => {
         error: questionsError,
         refetch: refetchQuestions,
     } = useGetQuestionsByQuizQuery(quizId!, {skip: !quizId});
-    const {data: groupData, isLoading: isGroupsLoading, error: groupsError} = useGetAllGroupsQuery({});
+    const {data: groupData, error: groupsError} = useGetAllGroupsQuery("groups");
 
-    // Map group IDs to group names
     const getGroupName = useCallback(
         (groupIds: string[]): string => {
             if (!groupData || !groupIds || groupIds.length === 0) return 'No Group';
@@ -82,6 +81,7 @@ const QuizT: React.FC = () => {
 
     // Handle group fetch errors
     useEffect(() => {
+        refetch()
         if (groupsError) {
             toast.error('Failed to load groups');
             console.error('Group fetch error:', groupsError);
@@ -345,9 +345,6 @@ const QuizT: React.FC = () => {
                             setGroups={setGroups}
                             isCreatingQuiz={isCreatingQuiz}
                             handleCreateQuiz={handleCreateQuiz}
-                            groupData={groupData}
-                            isGroupsLoading={isGroupsLoading}
-                            groupsError={groupsError}
                         />
                         <QuizList
                             quizzes={enrichedQuizzes}
@@ -384,6 +381,7 @@ const QuizT: React.FC = () => {
                             handleBackToMain={() => {
                                 setQuizCreated(false);
                                 resetForm();
+                                refetch()
                             }}
                             undoLastQuestion={undoLastQuestion}
                             undoQuiz={undoQuiz}
