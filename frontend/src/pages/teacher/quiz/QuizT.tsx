@@ -12,7 +12,7 @@ import {
 } from '../../../services/questionApi';
 import {toast} from 'react-hot-toast';
 import {Edit3} from 'lucide-react';
-import TimeEditModal from '../../admin/quiz/TimeEditModal';
+import TimeEditModal from '../../../components/timeeditmodal/TimeEditModal.tsx';
 import QuizCreator from './components/QuizCreator';
 import QuizList from './components/QuizList';
 import QuizHeader from './components/QuizHeader';
@@ -244,6 +244,12 @@ const QuizT: React.FC = () => {
         }
     };
 
+    const handleResetQuizForm = () => {
+        setQuizTitle('');
+        setQuizTime(30);
+        setGroups([]);
+    };
+
     const handleUpdateQuestion = async () => {
         if (!quizId || !editingQuestionId) return toast.error('No question selected');
         if (!questionText.trim()) return toast.error('Question text is required');
@@ -345,6 +351,7 @@ const QuizT: React.FC = () => {
                             setGroups={setGroups}
                             isCreatingQuiz={isCreatingQuiz}
                             handleCreateQuiz={handleCreateQuiz}
+                            handleResetForm={handleResetQuizForm}
                         />
                         <QuizList
                             quizzes={enrichedQuizzes}
@@ -381,6 +388,7 @@ const QuizT: React.FC = () => {
                             handleBackToMain={() => {
                                 setQuizCreated(false);
                                 resetForm();
+                                handleResetQuizForm();
                                 refetch()
                             }}
                             undoLastQuestion={undoLastQuestion}

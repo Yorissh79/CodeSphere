@@ -1,49 +1,58 @@
-import {useState, useEffect} from "react";
+import {useState, useEffect, useCallback} from 'react';
 import {
     useCreateQuizMutation,
     useDeleteQuizMutation,
     useGetAllQuizzesQuery,
     useUpdateQuizMutation,
-} from "../../../services/quizApi";
+} from '../../../services/quizApi';
 import {
     useCreateQuestionMutation,
     useDeleteQuestionMutation,
     useGetQuestionsByQuizQuery,
-} from "../../../services/questionApi";
-import Papa from "papaparse";
-import {toast} from "react-hot-toast";
-import {Edit3} from "lucide-react";
-import TimeEditModal from "./TimeEditModal";
-import QuizCreatorHeader from "./components/QuizCreatorHeader";
-import QuizStatusControl from "./components/QuizStatusControl";
-import QuizActionButtons from "./components/QuizActionButtons";
-import QuestionForm from "./components/QuestionForm";
-import QuestionList from "./components/QuestionList";
-import QuizList from "./components/QuizList";
-import QuizCreateForm from "./components/QuizCreateForm";
-import type {QuestionPayload, QuestionType, Question, Quiz, ImportedQuestion} from "./components/types";
+} from '../../../services/questionApi';
+import {toast} from 'react-hot-toast';
+import {Edit3} from 'lucide-react';
+import TimeEditModal from '../../../components/timeeditmodal/TimeEditModal.tsx';
+import QuizCreator from './components/QuizCreator';
+import QuizList from './components/QuizList';
+import QuizHeader from './components/QuizHeader';
+import QuizStatus from './components/QuizStatus';
+import QuestionForm from './components/QuestionForm';
+import QuestionList from './components/QuestionList';
+import {useGetAllGroupsQuery} from '../../../services/groupApi';
 
-const QuizA = () => {
-    const [quizTitle, setQuizTitle] = useState("");
+interface Group {
+    _id: string;
+    groups: string[];
+}
+
+interface QuestionPayload {
+    quizId: string;
+    type: 'mcq' | 'truefalse' | 'short';
+    questionText: string;
+    options?: string[];
+    correctAnswerIndex?: number;
+}
+
+const QuizA: React.FC = () => {
+    const [quizTitle, setQuizTitle] = useState('');
     const [quizId, setQuizId] = useState<string | null>(null);
     const [quizCreated, setQuizCreated] = useState(false);
     const [isTimeModalOpen, setIsTimeModalOpen] = useState(false);
     const [quizOpened, setQuizOpened] = useState<boolean>(false);
-
-    const [type, setType] = useState<QuestionType>("mcq");
-    const [questionText, setQuestionText] = useState("");
-    const [options, setOptions] = useState<string[]>(["", ""]);
+    const [groups, setGroups] = useState<string[]>([]);
+    const [type, setType] = useState<'mcq' | 'truefalse' | 'short'>('mcq');
+    const [questionText, setQuestionText] = useState('');
+    const [options, setOptions] = useState<string[]>(['', '']);
     const [correctIndex, setCorrectIndex] = useState(0);
     const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
     const [quizTime, setQuizTime] = useState<number>(30);
-
-    const [questionList, setQuestionList] = useState<Question[]>([]);
+    const [questionList, setQuestionList] = useState<any[]>([]);
     const [createdQuestions, setCreatedQuestions] = useState<string[]>([]);
 
     const [createQuiz, {isLoading: isCreatingQuiz}] = useCreateQuizMutation();
     const [deleteQuiz] = useDeleteQuizMutation();
     const [updateQuiz] = useUpdateQuizMutation();
-
     const [createQuestion, {isLoading: isCreatingQuestion}] = useCreateQuestionMutation();
     const [deleteQuestion] = useDeleteQuestionMutation();
 
@@ -54,38 +63,46 @@ const QuizA = () => {
         error: questionsError,
         refetch: refetchQuestions,
     } = useGetQuestionsByQuizQuery(quizId!, {skip: !quizId});
+    const {data: groupData, error: groupsError} = useGetAllGroupsQuery("groups");
 
+    const getGroupName = useCallback(
+        (groupIds: string[]): string => {
+            if (!groupData || !groupIds || groupIds.length === 0) return 'No Group';
+            const groupNames = groupIds
+                .map((id) => {
+                    const foundGroup = groupData.find((g: Group) => g._id === id);
+                    return foundGroup?.group || null;
+                })
+                .filter((name): name is string => name !== null);
+            return groupNames.length > 0 ? groupNames.join(', ') : 'No Group';
+        },
+        [groupData]
+    );
+
+    // Handle group fetch errors
     useEffect(() => {
-        refetch();
+        refetch()
+        if (groupsError) {
+            toast.error('Failed to load groups');
+            console.error('Group fetch error:', groupsError);
+        }
+    }, [groupsError]);
+
+    // Sync questions when fetched
+    useEffect(() => {
         if (quizId && questions && !isFetchingQuestions) {
             setQuestionList(questions);
-            setCreatedQuestions(questions.map((q: Question) => q._id));
+            setCreatedQuestions(questions.map((q: any) => q._id));
         }
         if (quizId && questionsError) {
-            toast.error("Failed to fetch questions");
-            console.error(questionsError);
+            toast.error('Failed to fetch questions');
+            console.error('Questions fetch error:', questionsError);
         }
-    }, [refetch, quizId, questions, isFetchingQuestions]);
+    }, [quizId, questions, isFetchingQuestions, questionsError]);
 
+    // Other functions (addOption, deleteOption, updateOption, etc.) remain unchanged
     const addOption = () => {
-        setOptions((prev) => [...prev, ""]);
-    };
-
-    const handleTimeUpdate = async (newTime: number) => {
-        if (!quizId) return toast.error("No quiz selected");
-        try {
-            await updateQuiz({
-                id: quizId,
-                title: quizTitle,
-                timeLimit: newTime,
-                opened: quizOpened,
-            }).unwrap();
-            setQuizTime(newTime);
-            toast.success(`Time limit updated to ${newTime} minutes`);
-        } catch (error) {
-            toast.error("Failed to update time");
-            console.error(error);
-        }
+        setOptions((prev) => [...prev, '']);
     };
 
     const deleteOption = (index: number) => {
@@ -105,28 +122,31 @@ const QuizA = () => {
     };
 
     const handleCreateQuiz = async () => {
-        if (!quizTitle.trim()) return toast.error("Quiz title is required");
+        if (!quizTitle.trim()) return toast.error('Quiz title is required');
+        if (!groups.length) return toast.error('At least one group is required');
         try {
             const response = await createQuiz({
                 title: quizTitle,
                 timeLimit: quizTime,
                 opened: false,
+                groups,
             }).unwrap();
             setQuizId(response.quiz._id);
             setQuizCreated(true);
             setQuestionList([]);
             setCreatedQuestions([]);
-            toast.success("Quiz created successfully");
+            toast.success('Quiz created successfully');
         } catch (error) {
-            toast.error("Failed to create quiz");
-            console.error(error);
+            toast.error('Failed to create quiz');
+            console.error('Create quiz error:', error);
         }
     };
 
-    const handleEditQuiz = (quiz: Quiz) => {
+    const handleEditQuiz = (quiz: any) => {
         setQuizTitle(quiz.title);
         setQuizTime(quiz.timeLimit || 30);
         setQuizOpened(quiz.opened || false);
+        setGroups(quiz.groups || []);
         setQuizId(quiz._id);
         setQuizCreated(true);
         setQuestionList([]);
@@ -136,35 +156,54 @@ const QuizA = () => {
     const handleDeleteQuiz = async (quizId: string) => {
         try {
             await deleteQuiz(quizId).unwrap();
-            toast.success("Quiz deleted successfully");
+            toast.success('Quiz deleted successfully');
             refetch();
         } catch (error) {
-            toast.error("Failed to delete quiz");
-            console.error(error);
+            toast.error('Failed to delete quiz');
+            console.error('Delete quiz error:', error);
+        }
+    };
+
+    const handleTimeUpdate = async (newTime: number) => {
+        if (!quizId) return toast.error('No quiz selected');
+        try {
+            await updateQuiz({
+                id: quizId,
+                title: quizTitle,
+                timeLimit: newTime,
+                opened: quizOpened,
+                groups,
+            }).unwrap();
+            setQuizTime(newTime);
+            toast.success(`Time limit updated to ${newTime} minutes`);
+        } catch (error) {
+            toast.error('Failed to update time');
+            console.error('Update time error:', error);
         }
     };
 
     const handleStatusUpdate = async () => {
-        if (!quizId) return toast.error("No quiz selected");
+        if (!quizId) return toast.error('No quiz selected');
         try {
             await updateQuiz({
                 id: quizId,
                 title: quizTitle,
                 timeLimit: quizTime,
                 opened: quizOpened,
+                groups,
             }).unwrap();
-            toast.success(`Quiz ${quizOpened ? "opened" : "closed"} successfully`);
+            toast.success(`Quiz ${quizOpened ? 'opened' : 'closed'} successfully`);
         } catch (error) {
-            toast.error("Failed to update quiz status");
-            console.error(error);
+            toast.error('Failed to update quiz status');
+            console.error('Update status error:', error);
         }
     };
 
-    const handleEditQuestion = (question: Question) => {
+    const handleEditQuestion = (question: any) => {
         setEditingQuestionId(question._id);
         setType(question.type);
         setQuestionText(question.questionText);
-        setOptions(question.options || ["", ""]);
+        setOptions(question.options || ['', '']);
         setCorrectIndex(question.correctAnswerIndex || 0);
     };
 
@@ -173,24 +212,24 @@ const QuizA = () => {
             await deleteQuestion(questionId).unwrap();
             setQuestionList((prev) => prev.filter((q) => q._id !== questionId));
             setCreatedQuestions((prev) => prev.filter((id) => id !== questionId));
-            toast.success("Question deleted successfully");
+            toast.success('Question deleted successfully');
             refetchQuestions();
         } catch (error) {
-            toast.error("Failed to delete question");
-            console.error(error);
+            toast.error('Failed to delete question');
+            console.error('Delete question error:', error);
         }
     };
 
     const handleSubmit = async () => {
-        if (!quizId) return toast.error("No quiz selected");
-        if (!questionText.trim()) return toast.error("Question text is required");
+        if (!quizId) return toast.error('No quiz selected');
+        if (!questionText.trim()) return toast.error('Question text is required');
 
         const payload: QuestionPayload = {
             quizId,
             type,
             questionText,
-            options: type === "mcq" ? options : undefined,
-            correctAnswerIndex: type === "mcq" || type === "truefalse" ? correctIndex : undefined,
+            options: type === 'mcq' ? options : undefined,
+            correctAnswerIndex: type === 'mcq' || type === 'truefalse' ? correctIndex : undefined,
         };
 
         try {
@@ -198,52 +237,61 @@ const QuizA = () => {
             setCreatedQuestions((prev) => [...prev, res.question._id]);
             setQuestionList((prev) => [...prev, res.question]);
             resetForm();
-            toast.success("Question created successfully");
+            toast.success('Question created successfully');
         } catch (error) {
-            toast.error("Failed to create question");
-            console.error(error);
+            toast.error('Failed to create question');
+            console.error('Create question error:', error);
         }
     };
 
+    const handleResetQuizForm = () => {
+        setQuizTitle('');
+        setQuizTime(30);
+        setGroups([]);
+    };
+
     const handleUpdateQuestion = async () => {
-        if (!quizId || !editingQuestionId) return toast.error("No question selected");
-        if (!questionText.trim()) return toast.error("Question text is required");
+        if (!quizId || !editingQuestionId) return toast.error('No question selected');
+        if (!questionText.trim()) return toast.error('Question text is required');
 
         const payload: QuestionPayload = {
             quizId,
             type,
             questionText,
-            options: type === "mcq" ? options : undefined,
-            correctAnswerIndex: type === "mcq" || type === "truefalse" ? correctIndex : undefined,
+            options: type === 'mcq' ? options : undefined,
+            correctAnswerIndex: type === 'mcq' || type === 'truefalse' ? correctIndex : undefined,
         };
 
         try {
             const res = await createQuestion(payload).unwrap();
             await deleteQuestion(editingQuestionId).unwrap();
-            setQuestionList((prev) => [...prev.filter((q) => q._id !== editingQuestionId), res.question]);
+            setQuestionList((prev) => [
+                ...prev.filter((q) => q._id !== editingQuestionId),
+                res.question,
+            ]);
             setCreatedQuestions((prev) => [
                 ...prev.filter((id) => id !== editingQuestionId),
                 res.question._id,
             ]);
             resetForm();
-            toast.success("Question updated successfully");
+            toast.success('Question updated successfully');
         } catch (error) {
-            toast.error("Failed to update question");
-            console.error(error);
+            toast.error('Failed to update question');
+            console.error('Update question error:', error);
         }
     };
 
     const resetForm = () => {
-        setQuestionText("");
-        setOptions(["", ""]);
+        setQuestionText('');
+        setOptions(['', '']);
         setCorrectIndex(0);
-        setType("mcq");
+        setType('mcq');
         setEditingQuestionId(null);
     };
 
     const undoLastQuestion = async () => {
         if (createdQuestions.length === 0) {
-            toast.error("No question to undo");
+            toast.error('No question to undo');
             return;
         }
 
@@ -252,15 +300,16 @@ const QuizA = () => {
             await deleteQuestion(lastId).unwrap();
             setCreatedQuestions((prev) => prev.slice(0, -1));
             setQuestionList((prev) => prev.slice(0, -1));
-            toast.success("Last question deleted");
+            toast.success('Last question deleted');
         } catch (error) {
-            toast.error("Failed to delete last question");
+            toast.error('Failed to delete last question');
+            console.error('Delete last question error:', error);
         }
     };
 
     const undoQuiz = async () => {
         if (!quizId) {
-            toast.error("No quiz to undo");
+            toast.error('No quiz to undo');
             return;
         }
         try {
@@ -270,109 +319,50 @@ const QuizA = () => {
             setQuizCreated(false);
             setCreatedQuestions([]);
             setQuestionList([]);
-            setQuizTitle("");
+            setQuizTitle('');
             setQuizTime(30);
             setQuizOpened(false);
+            setGroups([]);
             resetForm();
-            toast.success("Quiz and all questions deleted");
+            toast.success('Quiz and all questions deleted');
         } catch (error) {
-            toast.error("Failed to delete quiz");
-            console.error(error);
+            toast.error('Failed to delete quiz');
+            console.error('Undo quiz error:', error);
         }
     };
 
-    // const handleCsvImport = () => {
-    //     if (!fileInputRef.current) return;
-    //     fileInputRef.current.click();
-    // };
-
-    const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        Papa.parse<ImportedQuestion>(file, {
-            header: true,
-            skipEmptyLines: true,
-            complete: async (results) => {
-                if (!quizId) {
-                    toast.error("Create quiz first before importing questions.");
-                    return;
-                }
-
-                const questions = results.data;
-                for (const q of questions) {
-                    if (!q.questionText || !q.type) {
-                        toast.error("Invalid question data in CSV");
-                        continue;
-                    }
-
-                    const payload: QuestionPayload = {
-                        quizId,
-                        type: q.type,
-                        questionText: q.questionText,
-                        options: q.type === "mcq" ? q.options : undefined,
-                        correctAnswerIndex: q.type === "mcq" || q.type === "truefalse" ? q.correctAnswerIndex : undefined,
-                    };
-
-                    try {
-                        const res = await createQuestion(payload).unwrap();
-                        setCreatedQuestions((prev) => [...prev, res.question._id]);
-                        setQuestionList((prev) => [...prev, res.question]);
-                    } catch (err) {
-                        toast.error("Error importing question");
-                        console.error(err);
-                    }
-                }
-                toast.success("CSV import finished");
-            },
-            error: (error) => {
-                toast.error("Failed to parse CSV file");
-                console.error(error);
-            },
-        });
-    };
-
-    const handleBackToMain = () => {
-        setQuizId(null);
-        setQuizCreated(false);
-        setQuizTitle("");
-        setQuizTime(30);
-        setQuizOpened(false);
-        setQuestionList([]);
-        setCreatedQuestions([]);
-        resetForm();
-        refetchQuestions();
-    };
+    const enrichedQuizzes = quizzes?.map((quiz: any) => ({
+        ...quiz,
+        groupName: getGroupName(quiz.groups || []),
+    }));
 
     return (
         <div
             className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-indigo-900 py-8 px-4 transition-all duration-300">
-            <div className="max-w-4xl mx-auto">
+            <div className="max-w-4xl mx-auto flex flex-col items-center justify-center space-y-8">
                 {!quizCreated ? (
-                    <div className="flex flex-col items-center justify-center space-y-8">
-                        <QuizCreateForm
+                    <>
+                        <QuizCreator
                             quizTitle={quizTitle}
                             setQuizTitle={setQuizTitle}
                             quizTime={quizTime}
                             setQuizTime={setQuizTime}
+                            groups={groups}
+                            setGroups={setGroups}
                             isCreatingQuiz={isCreatingQuiz}
                             handleCreateQuiz={handleCreateQuiz}
+                            handleResetForm={handleResetQuizForm}
                         />
                         <QuizList
-                            quizzes={quizzes}
+                            quizzes={enrichedQuizzes}
                             isLoading={isLoading}
                             error={error}
                             handleEditQuiz={handleEditQuiz}
                             handleDeleteQuiz={handleDeleteQuiz}
                         />
-                    </div>
+                    </>
                 ) : (
-                    <div className="space-y-8">
-                        <QuizCreatorHeader
-                            editingQuestionId={editingQuestionId}
-                            quizTitle={quizTitle}
-                            quizTime={quizTime}
-                        />
+                    <>
                         <button
                             onClick={() => setIsTimeModalOpen(true)}
                             className="flex items-center px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors duration-200"
@@ -381,20 +371,28 @@ const QuizA = () => {
                             <Edit3 className="w-4 h-4 mr-2"/>
                             Edit Time
                         </button>
-                        <QuizStatusControl
+                        <QuizStatus
                             quizOpened={quizOpened}
-                            isCreatingQuestion={isCreatingQuestion}
                             setQuizOpened={setQuizOpened}
+                            isCreatingQuestion={isCreatingQuestion}
                             handleStatusUpdate={handleStatusUpdate}
                         />
-                        <QuizActionButtons
+                        <QuizHeader
+                            quizId={quizId!}
+                            quizTitle={quizTitle}
+                            quizTime={quizTime}
+                            groupName={getGroupName(groups)}
                             isCreatingQuestion={isCreatingQuestion}
                             createdQuestions={createdQuestions}
-                            handleBackToMain={handleBackToMain}
+                            editingQuestionId={editingQuestionId}
+                            handleBackToMain={() => {
+                                setQuizCreated(false);
+                                resetForm();
+                                handleResetQuizForm();
+                                refetch()
+                            }}
                             undoLastQuestion={undoLastQuestion}
                             undoQuiz={undoQuiz}
-                            handleCsvImport={handleCsvImport}
-                            onFileChange={onFileChange}
                         />
                         <QuestionForm
                             type={type}
@@ -419,7 +417,7 @@ const QuizA = () => {
                             handleEditQuestion={handleEditQuestion}
                             handleDeleteQuestion={handleDeleteQuestion}
                         />
-                    </div>
+                    </>
                 )}
             </div>
             <TimeEditModal
