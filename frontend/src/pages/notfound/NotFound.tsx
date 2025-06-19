@@ -54,12 +54,12 @@ const NotFound: React.FC = () => {
                     >
                         Go Home
                     </Link>
-                    {/*<Link*/}
-                    {/*    to="/search"*/}
-                    {/*    className="bg-transparent border-2 border-indigo-600 text-indigo-600 px-6 py-3 rounded-lg font-medium hover:bg-indigo-600 hover:text-white hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-400"*/}
-                    {/*>*/}
-                    {/*    Search Site*/}
-                    {/*</Link>*/}
+                    <Link
+                        to="/search"
+                        className="bg-transparent border-2 border-indigo-600 text-indigo-600 px-6 py-3 rounded-lg font-medium hover:bg-indigo-600 hover:text-white hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                    >
+                        Search Site
+                    </Link>
                 </div>
             </main>
 

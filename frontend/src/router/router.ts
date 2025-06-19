@@ -31,6 +31,7 @@ import QuizA from "../pages/admin/quiz/QuizA.tsx";
 import QuizS from "../pages/student/quiz/QuizS.tsx";
 import QuizAnalysisPage from "../pages/teacher/teacherquizchecker/QuizAnalysisPage.tsx";
 import QuizT from "../pages/teacher/quiz/QuizT.tsx";
+import SearchPage from "../pages/search/SearchPage.tsx";
 
 export const router = createBrowserRouter([
     {
@@ -39,7 +40,7 @@ export const router = createBrowserRouter([
         children: [
             {
                 path: "",
-                Component: F
+                Component: F,
             },
             {
                 path: "pp",
@@ -165,7 +166,7 @@ export const router = createBrowserRouter([
         children: [
             {
                 path: "student",
-                Component: AppLayout
+                Component: AppLayout,
             },
             {
                 path: "teacher",
@@ -175,6 +176,15 @@ export const router = createBrowserRouter([
                 path: "admin",
                 Component: AdminAuth
             },
+        ]
+    },
+    {
+        path: "/search",
+        children: [
+            {
+                path: "/search",
+                Component: SearchPage
+            }
         ]
     },
     {
