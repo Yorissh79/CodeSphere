@@ -124,13 +124,13 @@ router.post("/quiz/create", validTeacherOrAdmin, createQuiz);
 router.get("/quiz/all", getAllQuizzes);
 router.get("/quiz/:id", getQuizById);
 router.delete("/quiz/:id", validTeacherOrAdmin, deleteQuiz);
-router.post("/quiz/answers", validTeacherOrAdmin, createAnswer)
+router.post("/quiz/answers", createAnswer)
 router.put("/quiz/update/:id", validTeacherOrAdmin, updateQuiz)
 router.get("/quiz/answers/quiz/:quizId", checkQuizSubmission)
 
 // Question Routes
 router.post("/question/create", validTeacherOrAdmin, createQuestion);
-router.get("/question/quiz/:quizId", validTeacherOrAdmin, getQuestionsByQuiz);
+router.get("/question/quiz/:quizId", getQuestionsByQuiz);
 router.delete("/question/:id", validTeacherOrAdmin, deleteQuestion);
 
 

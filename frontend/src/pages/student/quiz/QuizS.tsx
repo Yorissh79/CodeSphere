@@ -11,6 +11,7 @@ import QuestionDisplay from "./components/QuestionDisplay";
 import TimeUpModal from "./components/TimeUpModal";
 import QuizHeader from "./components/QuizHeader";
 import type {Answer} from "./components/types.ts";
+import {useGetAllGroupsQuery} from "../../../services/groupApi.ts";
 
 const STORAGE_KEY = "quiz_answers";
 
@@ -28,6 +29,7 @@ const QuizS = () => {
 
     const {data: authData, isLoading: isLoadingAuth, error: authError} = useCheckAuthQuery();
     const {data: quizzes, isLoading: isLoadingQuizzes, error: quizzesError} = useGetAllQuizzesQuery();
+    const {data: groups, error: groupError} = useGetAllGroupsQuery({});
     const {
         data: questions,
         isFetching: isFetchingQuestions,
@@ -36,6 +38,8 @@ const QuizS = () => {
     const [submitAnswers, {isLoading: isSubmittingAnswers}] = useSubmitAnswersMutation();
 
     const studentId = authData?.user?._id;
+    const groupName = authData?.user?.group;
+    const allGroups = groups;
 
     // Persist answers to localStorage
     useEffect(() => {
@@ -63,7 +67,10 @@ const QuizS = () => {
             toast.error("Failed to load questions");
             console.error(questionsError);
         }
-    }, [authError, quizzesError, questionsError]);
+        if (groupError) {
+            console.error(groupError);
+        }
+    }, [authError, quizzesError, questionsError, groupError]);
 
     // Timer logic with warning
     useEffect(() => {
@@ -328,6 +335,9 @@ const QuizS = () => {
                             isLoadingQuizzes={isLoadingQuizzes}
                             quizzesError={quizzesError}
                             handleStartQuiz={handleStartQuiz}
+                            group={groupName}
+                            allGroups={allGroups}
+                            studentId={studentId}
                         />
                     ) : (
                         <div className="space-y-8">

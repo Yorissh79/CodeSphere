@@ -100,7 +100,7 @@ export const router = createBrowserRouter([
                     {
                         path: "quiz",
                         Component: QuizS
-                    }
+                    },
                 ]
             },
             {

@@ -13,6 +13,7 @@
     "@heroicons/react": "^2.2.0",
     "@react-oauth/google": "^0.12.2",
     "@reduxjs/toolkit": "^2.8.2",
+    "@stackblitz/sdk": "^1.11.0",
     "@tailwindcss/postcss": "^4.1.10",
     "@tailwindcss/vite": "^4.1.10",
     "chart.js": "^4.4.9",

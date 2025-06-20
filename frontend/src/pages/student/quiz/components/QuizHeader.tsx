@@ -2,7 +2,7 @@ import {ArrowLeft, Clock} from "lucide-react";
 import type {Quiz} from "./types";
 
 interface QuizHeaderProps {
-    selectedQuiz: Quiz | undefined;
+    selectedQuiz: Quiz | any | undefined;
     timeRemaining: number;
     currentQuestionIndex: number;
     questions: any[] | undefined;
