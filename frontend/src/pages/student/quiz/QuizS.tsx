@@ -10,10 +10,17 @@ import QuestionNavigator from "./components/QuestionNavigator";
 import QuestionDisplay from "./components/QuestionDisplay";
 import TimeUpModal from "./components/TimeUpModal";
 import QuizHeader from "./components/QuizHeader";
-import type {Answer} from "./components/types.ts";
 import {useGetAllGroupsQuery} from "../../../services/groupApi.ts";
 
 const STORAGE_KEY = "quiz_answers";
+
+interface Answer {
+    questionId: string;
+    answer: string | number | string[];
+    timeSpent: number;
+    changedCount: number;
+    startTime: number;
+}
 
 const QuizS = () => {
     const [selectedQuizId, setSelectedQuizId] = useState<string | null>(null);
@@ -116,6 +123,7 @@ const QuizS = () => {
                     ...prev,
                     {
                         questionId: currentQuestion._id,
+                        answer: "",
                         timeSpent: 0,
                         changedCount: 0,
                         startTime: Date.now(),
@@ -167,7 +175,7 @@ const QuizS = () => {
         }
     };
 
-    const handleAnswerChange = (questionId: string, value: number | string) => {
+    const handleAnswerChange = (questionId: string, value: string | number | string[]) => {
         setAnswers((prev) => {
             const existingAnswer = prev.find((a) => a.questionId === questionId);
             if (existingAnswer) {
@@ -175,8 +183,7 @@ const QuizS = () => {
                     a.questionId === questionId
                         ? {
                             ...a,
-                            selectedOption: typeof value === "number" ? value : undefined,
-                            shortAnswer: typeof value === "string" ? value : undefined,
+                            answer: value,
                             changedCount: a.changedCount + 1,
                             timeSpent: a.timeSpent + ((Date.now() - a.startTime) / 1000),
                             startTime: Date.now(),
@@ -188,8 +195,7 @@ const QuizS = () => {
                 ...prev,
                 {
                     questionId,
-                    selectedOption: typeof value === "number" ? value : undefined,
-                    shortAnswer: typeof value === "string" ? value : undefined,
+                    answer: value,
                     timeSpent: 0,
                     changedCount: 1,
                     startTime: Date.now(),
@@ -250,7 +256,7 @@ const QuizS = () => {
             studentId,
             quizId: selectedQuizId,
             questionId: answer.questionId,
-            answer: answer.selectedOption ?? answer.shortAnswer ?? "",
+            answer: answer.answer,
             submittedAt: new Date().toISOString(),
             timeSpent: Math.round(answer.timeSpent),
             changedCount: answer.changedCount,
@@ -284,7 +290,10 @@ const QuizS = () => {
     };
 
     const answeredCount = answers.filter(
-        (a) => a.selectedOption !== undefined || (a.shortAnswer && a.shortAnswer.trim() !== "")
+        (a) =>
+            (typeof a.answer === "string" && a.answer.trim() !== "") ||
+            (typeof a.answer === "number") ||
+            (Array.isArray(a.answer) && a.answer.length > 0)
     ).length;
 
     const currentQuestion = questions?.[currentQuestionIndex];

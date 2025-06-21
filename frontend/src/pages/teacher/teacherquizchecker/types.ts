@@ -44,10 +44,14 @@ export interface Quiz {
 }
 
 export interface AnswerPayload {
+    _id: string;
     studentId: string;
     quizId: string;
     questionId: string;
     answer: string | number | string[];
     timeSpent: number;
     changedCount: number;
+    isCorrect?: boolean;
+    teacherFeedback?: string;
+    reviewed?: boolean;
 }

@@ -6,8 +6,9 @@ export interface IQuestion extends Document {
     _id: mongoose.Types.ObjectId;
     quizId: mongoose.Types.ObjectId;
     questionText: string;
-    options?: string[]; // Required for MCQ/TrueFalse
-    correctAnswerIndex?: number; // Optional for open-ended
+    options?: string[];
+    correctAnswerIndices?: number[];
+    correctAnswer: { type: Schema.Types.Mixed },
     type: QuestionType;
 }
 
@@ -16,7 +17,8 @@ const questionSchema: Schema<IQuestion> = new Schema(
         quizId: { type: Schema.Types.ObjectId, ref: "Quiz", required: true },
         questionText: { type: String, required: true },
         options: [{ type: String }],
-        correctAnswerIndex: { type: Number },
+        correctAnswerIndices: [{ type: Number }],
+        correctAnswer: { type: Schema.Types.Mixed },
         type: {
             type: String,
             enum: ["mcq", "truefalse", "short"],

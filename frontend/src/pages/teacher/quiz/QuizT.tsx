@@ -31,7 +31,8 @@ interface QuestionPayload {
     type: 'mcq' | 'truefalse' | 'short';
     questionText: string;
     options?: string[];
-    correctAnswerIndex?: number;
+    correctAnswerIndices?: number[];
+    correctAnswer?: any;
 }
 
 const QuizT: React.FC = () => {
@@ -44,7 +45,7 @@ const QuizT: React.FC = () => {
     const [type, setType] = useState<'mcq' | 'truefalse' | 'short'>('mcq');
     const [questionText, setQuestionText] = useState('');
     const [options, setOptions] = useState<string[]>(['', '']);
-    const [correctIndex, setCorrectIndex] = useState(0);
+    const [correctAnswerIndices, setCorrectAnswerIndices] = useState<number[]>([]);
     const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
     const [quizTime, setQuizTime] = useState<number>(30);
     const [questionList, setQuestionList] = useState<any[]>([]);
@@ -100,7 +101,6 @@ const QuizT: React.FC = () => {
         }
     }, [quizId, questions, isFetchingQuestions, questionsError]);
 
-    // Other functions (addOption, deleteOption, updateOption, etc.) remain unchanged
     const addOption = () => {
         setOptions((prev) => [...prev, '']);
     };
@@ -108,7 +108,7 @@ const QuizT: React.FC = () => {
     const deleteOption = (index: number) => {
         setOptions((prev) => {
             const newOpts = prev.filter((_, i) => i !== index);
-            if (correctIndex >= newOpts.length) setCorrectIndex(0);
+            setCorrectAnswerIndices((prev) => prev.filter((i) => i !== index).map((i) => i > index ? i - 1 : i));
             return newOpts;
         });
     };
@@ -119,6 +119,14 @@ const QuizT: React.FC = () => {
             newOpts[index] = value;
             return newOpts;
         });
+    };
+
+    const toggleCorrectAnswer = (index: number) => {
+        setCorrectAnswerIndices((prev) =>
+            prev.includes(index)
+                ? prev.filter((i) => i !== index)
+                : [...prev, index]
+        );
     };
 
     const handleCreateQuiz = async () => {
@@ -204,7 +212,7 @@ const QuizT: React.FC = () => {
         setType(question.type);
         setQuestionText(question.questionText);
         setOptions(question.options || ['', '']);
-        setCorrectIndex(question.correctAnswerIndex || 0);
+        setCorrectAnswerIndices(question.correctAnswerIndices || []);
     };
 
     const handleDeleteQuestion = async (questionId: string) => {
@@ -224,12 +232,19 @@ const QuizT: React.FC = () => {
         if (!quizId) return toast.error('No quiz selected');
         if (!questionText.trim()) return toast.error('Question text is required');
 
+        const correctAnswer = type === 'mcq'
+            ? correctAnswerIndices.map((idx) => options[idx])
+            : type === 'truefalse'
+                ? correctAnswerIndices.includes(0) ? 'True' : 'False'
+                : undefined;
+
         const payload: QuestionPayload = {
             quizId,
             type,
             questionText,
             options: type === 'mcq' ? options : undefined,
-            correctAnswerIndex: type === 'mcq' || type === 'truefalse' ? correctIndex : undefined,
+            correctAnswerIndices: type === 'mcq' || type === 'truefalse' ? correctAnswerIndices : undefined,
+            correctAnswer,
         };
 
         try {
@@ -243,7 +258,6 @@ const QuizT: React.FC = () => {
             console.error('Create question error:', error);
         }
     };
-
     const handleResetQuizForm = () => {
         setQuizTitle('');
         setQuizTime(30);
@@ -254,12 +268,19 @@ const QuizT: React.FC = () => {
         if (!quizId || !editingQuestionId) return toast.error('No question selected');
         if (!questionText.trim()) return toast.error('Question text is required');
 
+        const correctAnswer = type === 'mcq'
+            ? correctAnswerIndices.map((idx) => options[idx])
+            : type === 'truefalse'
+                ? correctAnswerIndices.includes(0) ? 'True' : 'False'
+                : undefined;
+
         const payload: QuestionPayload = {
             quizId,
             type,
             questionText,
             options: type === 'mcq' ? options : undefined,
-            correctAnswerIndex: type === 'mcq' || type === 'truefalse' ? correctIndex : undefined,
+            correctAnswerIndices: type === 'mcq' || type === 'truefalse' ? correctAnswerIndices : undefined,
+            correctAnswer,
         };
 
         try {
@@ -280,11 +301,10 @@ const QuizT: React.FC = () => {
             console.error('Update question error:', error);
         }
     };
-
     const resetForm = () => {
         setQuestionText('');
         setOptions(['', '']);
-        setCorrectIndex(0);
+        setCorrectAnswerIndices([]);
         setType('mcq');
         setEditingQuestionId(null);
     };
@@ -401,13 +421,14 @@ const QuizT: React.FC = () => {
                             setQuestionText={setQuestionText}
                             options={options}
                             setOptions={setOptions}
-                            correctIndex={correctIndex}
-                            setCorrectIndex={setCorrectIndex}
+                            correctAnswerIndices={correctAnswerIndices}
+                            setCorrectAnswerIndices={setCorrectAnswerIndices}
                             isCreatingQuestion={isCreatingQuestion}
                             editingQuestionId={editingQuestionId}
                             addOption={addOption}
                             deleteOption={deleteOption}
                             updateOption={updateOption}
+                            toggleCorrectAnswer={toggleCorrectAnswer}
                             handleSubmit={handleSubmit}
                             handleUpdateQuestion={handleUpdateQuestion}
                         />

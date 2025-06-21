@@ -15,7 +15,6 @@ export interface Question {
 }
 
 export interface Quiz {
-    groups: string[];
     _id: string;
     title: string;
     timeLimit: number;

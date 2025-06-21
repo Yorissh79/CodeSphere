@@ -14,13 +14,14 @@ interface QuestionFormProps {
     setQuestionText: Dispatch<SetStateAction<string>>;
     options: string[];
     setOptions: Dispatch<SetStateAction<string[]>>;
-    correctIndex: number;
-    setCorrectIndex: Dispatch<SetStateAction<number>>;
+    correctAnswerIndices: number[];
+    setCorrectAnswerIndices: Dispatch<SetStateAction<number[]>>;
     isCreatingQuestion: boolean;
     editingQuestionId: string | null;
     addOption: () => void;
     deleteOption: (index: number) => void;
     updateOption: (index: number, value: string) => void;
+    toggleCorrectAnswer: (index: number) => void;
     handleSubmit: () => void;
     handleUpdateQuestion: () => void;
 }
@@ -31,19 +32,20 @@ const QuestionForm: React.FC<QuestionFormProps> = ({
                                                        questionText,
                                                        setQuestionText,
                                                        options,
-                                                       correctIndex,
-                                                       setCorrectIndex,
+                                                       correctAnswerIndices,
+                                                       setCorrectAnswerIndices,
                                                        isCreatingQuestion,
                                                        editingQuestionId,
                                                        addOption,
                                                        deleteOption,
                                                        updateOption,
+                                                       toggleCorrectAnswer,
                                                        handleSubmit,
                                                        handleUpdateQuestion,
                                                    }) => {
     return (
         <div
-            className=" w-full max-w-4xl mx-auto min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 p-4">
+            className="w-full max-w-4xl mx-auto min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 p-4">
             <div className="max-w-4xl mx-auto">
                 {/* Header */}
                 <div className="text-center mb-8">
@@ -148,19 +150,19 @@ const QuestionForm: React.FC<QuestionFormProps> = ({
                                     {options.map((opt, idx) => (
                                         <div key={idx}
                                              className="group flex items-center gap-4 p-4 bg-slate-50/80 dark:bg-slate-700/80 rounded-2xl border border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 transition-all duration-300 backdrop-blur-sm">
-                                            <div className="flex items-center">
+                                            <div className="flex items-center" key={`checkbox-${idx}`}>
                                                 <div className="relative">
                                                     <input
-                                                        type="radio"
-                                                        name="correct"
-                                                        checked={correctIndex === idx}
-                                                        onChange={() => setCorrectIndex(idx)}
-                                                        disabled={isCreatingQuestion}
-                                                        className="w-5 h-5 text-indigo-600 focus:ring-indigo-500 focus:ring-2 border-2 border-slate-300 dark:border-slate-500"
+                                                        type="checkbox"
+                                                        checked={correctAnswerIndices.includes(idx)}
+                                                        onChange={() => {
+                                                            toggleCorrectAnswer(idx);
+                                                        }}
+                                                        className="w-5 h-5 text-indigo-600 focus:ring-indigo-500 focus:ring-2 border-2 border-slate-300 dark:border-slate-500 rounded"
                                                     />
-                                                    {correctIndex === idx && (
+                                                    {correctAnswerIndices.includes(idx) && (
                                                         <div
-                                                            className="absolute inset-0 w-5 h-5 bg-indigo-500 rounded-full animate-ping opacity-75"></div>
+                                                            className="absolute inset-0 w-5 h-5 bg-indigo-500 rounded-sm animate-pulse opacity-75"></div>
                                                     )}
                                                 </div>
                                             </div>
@@ -213,23 +215,23 @@ const QuestionForm: React.FC<QuestionFormProps> = ({
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <label
                                         className={`group flex items-center justify-center p-6 rounded-2xl cursor-pointer transition-all duration-300 transform hover:scale-105 ${
-                                            correctIndex === 0
+                                            correctAnswerIndices.includes(0)
                                                 ? "bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/30 dark:to-emerald-900/30 border-2 border-green-500 shadow-lg"
                                                 : "bg-slate-50/80 dark:bg-slate-700/80 border-2 border-slate-200 dark:border-slate-600 hover:border-green-300 dark:hover:border-green-600"
                                         }`}>
                                         <input
                                             type="radio"
                                             name="tf"
-                                            checked={correctIndex === 0}
-                                            onChange={() => setCorrectIndex(0)}
+                                            checked={correctAnswerIndices.includes(0)}
+                                            onChange={() => setCorrectAnswerIndices([0])}
                                             disabled={isCreatingQuestion}
                                             className="sr-only"
                                         />
                                         <CheckCircle className={`w-6 h-6 mr-3 transition-all duration-300 ${
-                                            correctIndex === 0 ? "text-green-600 scale-110" : "text-green-400 group-hover:text-green-500"
+                                            correctAnswerIndices.includes(0) ? "text-green-600 scale-110" : "text-green-400 group-hover:text-green-500"
                                         }`}/>
                                         <span className={`font-semibold text-lg transition-colors duration-300 ${
-                                            correctIndex === 0 ? "text-green-700 dark:text-green-300" : "text-slate-700 dark:text-slate-300"
+                                            correctAnswerIndices.includes(0) ? "text-green-700 dark:text-green-300" : "text-slate-700 dark:text-slate-300"
                                         }`}>
                                             True
                                         </span>
@@ -237,23 +239,23 @@ const QuestionForm: React.FC<QuestionFormProps> = ({
 
                                     <label
                                         className={`group flex items-center justify-center p-6 rounded-2xl cursor-pointer transition-all duration-300 transform hover:scale-105 ${
-                                            correctIndex === 1
+                                            correctAnswerIndices.includes(1)
                                                 ? "bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-900/30 dark:to-rose-900/30 border-2 border-red-500 shadow-lg"
                                                 : "bg-slate-50/80 dark:bg-slate-700/80 border-2 border-slate-200 dark:border-slate-600 hover:border-red-300 dark:hover:border-red-600"
                                         }`}>
                                         <input
                                             type="radio"
                                             name="tf"
-                                            checked={correctIndex === 1}
-                                            onChange={() => setCorrectIndex(1)}
+                                            checked={correctAnswerIndices.includes(1)}
+                                            onChange={() => setCorrectAnswerIndices([1])}
                                             disabled={isCreatingQuestion}
                                             className="sr-only"
                                         />
                                         <XCircle className={`w-6 h-6 mr-3 transition-all duration-300 ${
-                                            correctIndex === 1 ? "text-red-600 scale-110" : "text-red-400 group-hover:text-red-500"
+                                            correctAnswerIndices.includes(1) ? "text-red-600 scale-110" : "text-red-400 group-hover:text-red-500"
                                         }`}/>
                                         <span className={`font-semibold text-lg transition-colors duration-300 ${
-                                            correctIndex === 1 ? "text-red-700 dark:text-red-300" : "text-slate-700 dark:text-slate-300"
+                                            correctAnswerIndices.includes(1) ? "text-red-700 dark:text-red-300" : "text-slate-700 dark:text-slate-300"
                                         }`}>
                                             False
                                         </span>
