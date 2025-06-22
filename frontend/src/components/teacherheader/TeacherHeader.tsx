@@ -82,6 +82,12 @@ const TeacherHeader = () => {
                         >
                             Quiz checker
                         </Link>
+                        <Link
+                            to="/user/teacher/task"
+                            className="px-3 py-2 text-sm font-medium text-gray-800 dark:text-white hover:underline"
+                        >
+                            Task
+                        </Link>
                         <button
                             onClick={toggleDarkMode}
                             className={`w-14 h-8 flex items-center rounded-full p-1 transition-colors duration-300 ${

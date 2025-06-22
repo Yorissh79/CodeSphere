@@ -66,11 +66,33 @@ import {
 } from "../controllers/questionController";
 
 import {validTeacherOrAdmin} from "../middleware/validTeacherOrAdmin";
-import {studentValid} from "../middleware/studentValid";
 import {
     createAnswer,
     checkQuizSubmission, updateTeacherEvaluation,
 } from "../controllers/answerController";
+
+import { studentValid } from "../middleware/studentValid";
+import {
+    createTask,
+    getTasksForTeacher,
+    getTasksForStudent,
+    submitTask,
+    gradeSubmission,
+    getTaskSubmissions
+} from "../controllers/taskController";
+
+import {createComment, deleteComment, getCommentsByAuthor, getCommentsBySubmission, getCommentStats, updateComment} from "../controllers/commentController"
+
+import {
+    createSubmission,
+    getSubmissions,
+    getSubmissionById,
+    updateSubmission,
+    deleteSubmission,
+    getSubmissionsByTask,
+    getSubmissionStats
+} from "../controllers/submissionController";
+import { upload } from "../controllers/fileUploadService";
 
 const router = express.Router();
 
@@ -135,5 +157,29 @@ router.post("/question/create", validTeacherOrAdmin, createQuestion);
 router.get("/question/quiz/:quizId", getQuestionsByQuiz);
 router.delete("/question/:id", validTeacherOrAdmin, deleteQuestion);
 
+router.post("/tasks/create", validTeacherOrAdmin, upload.array("files", 5), createTask);
+router.get("/tasks/teacher", checkTeacherAuth, getTasksForTeacher);
+router.get("/tasks/student", studentValid, getTasksForStudent);
+router.post("/tasks/submit", studentValid, submitTask);
+router.post("/tasks/grade/:submissionId", validTeacherOrAdmin, gradeSubmission);
+router.get("/tasks/submissions/:taskId", validTeacherOrAdmin, getTaskSubmissions);
+
+// Submission Routes
+router.post("/submissions/create", studentValid, createSubmission as any);
+router.get("/submissions", getSubmissions as any);
+router.get("/submissions/:id", getSubmissionById as any);
+router.put("/submissions/:id", updateSubmission as any);
+router.delete("/submissions/:id", deleteSubmission as any);
+router.get("/submissions/task/:taskId", getSubmissionsByTask as any);
+router.post("/submissions/grade/:id", validTeacherOrAdmin, gradeSubmission);
+router.get("/submissions/stats", validTeacherOrAdmin, getSubmissionStats as any);
+
+// Comment Routes
+router.post("/comments/:submissionId", createComment as any);
+router.get("/comments/submission/:submissionId", getCommentsBySubmission as any);
+router.put("/comments/:id", updateComment as any);
+router.delete("/comments/:id", deleteComment as any);
+router.get("/comments/author", getCommentsByAuthor as any);
+router.get("/comments/stats", validTeacherOrAdmin, getCommentStats as any);
 
 export default router;

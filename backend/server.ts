@@ -20,7 +20,7 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/", router);
 
-const PORT = parseInt(process.env.PORT || "3000", 10);
+const PORT = parseInt(process.env.PORT || "3001", 10);
 connectDB();
 
 app.listen(PORT, () => {

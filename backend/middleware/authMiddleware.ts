@@ -1,49 +1,48 @@
-import jwt from "jsonwebtoken";
-import { Request, Response, NextFunction } from "express";
-import UserModel from "../models/userModel";
+import jwt from 'jsonwebtoken';
+import { Request, Response, NextFunction } from 'express';
+import userModel from '../models/userModel';
+import teacherModel from '../models/teacherModel';
 
-interface UserPayload {
-    _id?: string;
-    name: string;
-    group?: string;
-    email: string;
-    password: string;
-    surname: string;
-    role: string;
-}
-
-interface AuthenticatedRequest extends Request {
-    user?: UserPayload;
-}
-
-const userControl = async (
-    req: AuthenticatedRequest,
-    res: Response,
-    next: NextFunction
-) => {
-    const token = req.cookies?.jwt;
-
-    if (!token) {
-        return res.status(401).json({ error: "Token not found" });
-    }
-
+export const authenticateUser = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const secret = process.env.JWT_SECRET;
-        if (!secret) throw new Error("JWT_SECRET is not set");
+        const token = req.cookies.jwt;
 
-        const decoded = jwt.verify(token, secret) as { id: string };
-
-        const user = await UserModel.findById(decoded.id).select("-password");
-
-        if (!user) {
-            return res.status(401).json({ error: "User not found" });
+        if (!token) {
+            return res.status(401).json({ error: 'No token provided' });
         }
 
+        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+
+        // Try to find user first, then teacher
+        let user = await userModel.findById(decoded.userId);
+        let userType = 'student';
+
+        if (!user) {
+            user = await teacherModel.findById(decoded.userId);
+            userType = 'teacher';
+        }
+
+        if (!user) {
+            return res.status(401).json({ error: 'User not found' });
+        }
+
+        req.body = { ...req.body, ...user.toObject(), userType };
         next();
     } catch (error) {
-        console.error("JWT validation error:", error);
-        res.status(401).json({ error: "Invalid or expired token" });
+        res.status(401).json({ error: 'Invalid token' });
     }
 };
 
-export default userControl;
+export const requireTeacher = (req: Request, res: Response, next: NextFunction) => {
+    if (req.body.userType !== 'teacher') {
+        return res.status(403).json({ error: 'Teacher access required' });
+    }
+    next();
+};
+
+export const requireStudent = (req: Request, res: Response, next: NextFunction) => {
+    if (req.body.userType !== 'student') {
+        return res.status(403).json({ error: 'Student access required' });
+    }
+    next();
+};
