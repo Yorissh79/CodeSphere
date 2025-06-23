@@ -1,31 +1,29 @@
-import {Plus, FileText} from 'lucide-react';
+import {Plus, FileText, Loader2} from 'lucide-react';
 import TaskCard from './TaskCard';
 import SearchFilterBar from './SearchFilterBar';
 import type {Task} from '../../../../types/api';
+import {boolean, string} from "yup";
 
 interface MainContentProps {
-    tasks: Task[] | undefined; // Allow undefined to reflect potential initial state
-    searchQuery: string;
-    filterStatus: string;
-    setShowCreateModal: (show: boolean) => void;
+    tasks: Task[],
+    searchQuery: string,
+    setSearchQuery: (query: string) => void,
+    filterStatus: 'all' | 'active' | 'expired',
+    setFilterStatus: (status: 'all' | 'active' | 'expired') => void,
+    setShowCreateModal: (show: boolean) => void,
+    isFetching: boolean,
+    pagination?: undefined
 }
 
-const MainContent = ({tasks, searchQuery, filterStatus, setShowCreateModal}: MainContentProps) => {
-    const getTaskStatus = (dueDate: string) => {
-        const now = new Date();
-        const deadline = new Date(dueDate);
-        return deadline > now ? 'active' : 'expired';
-    };
-
-    // Ensure tasks is an array, default to empty array if undefined or null
-    const filteredTasks = (Array.isArray(tasks) ? tasks : []).filter(task => {
-        const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            task.description.toLowerCase().includes(searchQuery.toLowerCase());
-        const taskStatus = getTaskStatus(task.dueDate);
-        const matchesFilter = filterStatus === 'all' || taskStatus === filterStatus;
-        return matchesSearch && matchesFilter;
-    });
-
+const MainContent = ({
+                         tasks,
+                         searchQuery,
+                         setSearchQuery,
+                         filterStatus,
+                         setFilterStatus,
+                         setShowCreateModal,
+                         isFetching,
+                     }: MainContentProps) => {
     return (
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-8">
@@ -33,10 +31,9 @@ const MainContent = ({tasks, searchQuery, filterStatus, setShowCreateModal}: Mai
                     <h2 className="text-3xl font-bold mb-2">Task Management</h2>
                     <p className="text-gray-600 dark:text-gray-400">Manage assignments and track student progress</p>
                 </div>
-
                 <button
                     onClick={() => setShowCreateModal(true)}
-                    className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl font-medium hover:from-indigo-600 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                    className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white bg-gray-900 rounded-xl font-medium hover:from-indigo-600 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                 >
                     <Plus className="w-5 h-5 mr-2"/>
                     Create Task
@@ -45,20 +42,24 @@ const MainContent = ({tasks, searchQuery, filterStatus, setShowCreateModal}: Mai
 
             <SearchFilterBar
                 searchQuery={searchQuery}
-                setSearchQuery={() => {
-                }} // Placeholder, handled in parent
+                setSearchQuery={setSearchQuery}
                 filterStatus={filterStatus}
-                setFilterStatus={() => {
-                }} // Placeholder, handled in parent
+                setFilterStatus={setFilterStatus}
             />
 
+            {isFetching && (
+                <div className="flex items-center justify-center py-4">
+                    <Loader2 className="w-6 h-6 animate-spin text-indigo-600"/>
+                </div>
+            )}
+
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                {filteredTasks.map((task) => (
-                    <TaskCard key={task.id} task={task}/>
+                {tasks.map((task) => (
+                    <TaskCard key={task._id} task={task}/>
                 ))}
             </div>
 
-            {filteredTasks.length === 0 && (
+            {tasks.length === 0 && !isFetching && (
                 <div className="text-center py-12">
                     <FileText className="w-16 h-16 text-gray-400 dark:text-gray-500 mx-auto mb-4"/>
                     <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No tasks found</h3>

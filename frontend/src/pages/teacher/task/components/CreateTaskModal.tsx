@@ -2,11 +2,7 @@ import {
     useState,
     useRef,
     useCallback,
-    type JSXElementConstructor,
-    type Key,
-    type ReactElement,
-    type ReactNode,
-    type ReactPortal,
+    useEffect,
 } from 'react';
 import {
     X,
@@ -16,15 +12,21 @@ import {
 } from 'lucide-react';
 import {useCreateTaskMutation} from '../../../../services/taskApi';
 import {useGetAllGroupsQuery} from '../../../../services/groupApi';
-import {useGetAllTeachersQuery} from '../../../../services/teacherApi';
 import type {CreateTaskRequest} from '../../../../types/api';
 
 interface CreateTaskModalProps {
     showCreateModal: boolean;
     setShowCreateModal: (show: boolean) => void;
+    currentTeacherId: string;
+    refetchTasks: () => void;
 }
 
-const CreateTaskModal = ({showCreateModal, setShowCreateModal}: CreateTaskModalProps) => {
+const CreateTaskModal = ({
+                             showCreateModal,
+                             setShowCreateModal,
+                             currentTeacherId,
+                             refetchTasks
+                         }: CreateTaskModalProps) => {
     const [dragOver, setDragOver] = useState(false);
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -40,22 +42,41 @@ const CreateTaskModal = ({showCreateModal, setShowCreateModal}: CreateTaskModalP
         error: groupsError
     } = useGetAllGroupsQuery({});
 
-    const {
-        data: teachersData,
-        isLoading: teachersLoading,
-        error: teachersError
-    } = useGetAllTeachersQuery({});
-
     const [taskForm, setTaskForm] = useState({
         title: '',
         description: '',
-        teacherId: '',
-        assignedGroups: [],
+        teacherId: currentTeacherId,
+        assignedGroups: [] as string[],
         deadline: '',
         allowLateSubmission: false,
         maxPoints: 100,
-        files: []
+        files: [] as File[]
     });
+
+    // Get current date and time in the format required for datetime-local input
+    const getCurrentDateTime = () => {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        return `${year}-${month}-${day}T${hours}:${minutes}`;
+    };
+
+    // Handle Escape key press to close modal
+    useEffect(() => {
+        const handleEscapeKey = (event: KeyboardEvent) => {
+            if (event.key === 'Escape' && showCreateModal) {
+                setShowCreateModal(false);
+            }
+        };
+
+        document.addEventListener('keydown', handleEscapeKey);
+        return () => {
+            document.removeEventListener('keydown', handleEscapeKey);
+        };
+    }, [showCreateModal, setShowCreateModal]);
 
     const handleCreateTask = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -73,7 +94,7 @@ const CreateTaskModal = ({showCreateModal, setShowCreateModal}: CreateTaskModalP
             };
 
             await createTask(createTaskData).unwrap();
-
+            refetchTasks(); // Refresh tasks after creation
             setShowCreateModal(false);
             resetForm();
         } catch (error) {
@@ -85,7 +106,7 @@ const CreateTaskModal = ({showCreateModal, setShowCreateModal}: CreateTaskModalP
         setTaskForm({
             title: '',
             description: '',
-            teacherId: '',
+            teacherId: currentTeacherId,
             assignedGroups: [],
             deadline: '',
             allowLateSubmission: false,
@@ -156,7 +177,7 @@ const CreateTaskModal = ({showCreateModal, setShowCreateModal}: CreateTaskModalP
                                 className="mb-6 p-4 bg-red-900/30 border border-red-700/50 rounded-xl flex items-center gap-2">
                                 <AlertCircle className="w-5 h-5 text-red-400"/>
                                 <span className="text-red-300 text-sm">
-                                    {"message" in createTaskError && createTaskError?.message || 'Failed to create task. Please try again.'}
+                                    {"message" in createTaskError && (createTaskError as any).message || 'Failed to create task. Please try again.'}
                                 </span>
                             </div>
                         )}
@@ -167,16 +188,6 @@ const CreateTaskModal = ({showCreateModal, setShowCreateModal}: CreateTaskModalP
                                 <AlertCircle className="w-5 h-5 text-red-400"/>
                                 <span className="text-red-300 text-sm">
                                     Failed to load groups. Please try again.
-                                </span>
-                            </div>
-                        )}
-
-                        {teachersError && (
-                            <div
-                                className="mb-6 p-4 bg-red-900/30 border border-red-700/50 rounded-xl flex items-center gap-2">
-                                <AlertCircle className="w-5 h-5 text-red-400"/>
-                                <span className="text-red-300 text-sm">
-                                    Failed to load teachers. Please try again.
                                 </span>
                             </div>
                         )}
@@ -206,43 +217,13 @@ const CreateTaskModal = ({showCreateModal, setShowCreateModal}: CreateTaskModalP
                                 />
                             </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-2">Teacher</label>
-                                {teachersLoading ? (
-                                    <div
-                                        className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700/50 rounded-xl text-gray-500 flex items-center gap-2">
-                                        <Loader2 className="w-4 h-4 animate-spin"/>
-                                        Loading teachers...
-                                    </div>
-                                ) : (
-                                    <select
-                                        required
-                                        value={taskForm.teacherId}
-                                        onChange={(e) => setTaskForm({...taskForm, teacherId: e.target.value})}
-                                        className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700/50 rounded-xl text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                                    >
-                                        <option value="" disabled>Select a teacher</option>
-                                        {teachersData?.map((teacher: {
-                                            _id: Key | readonly string[] | null | undefined;
-                                            name: string | number | bigint | boolean | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<string | number | bigint | boolean | ReactPortal | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | null | undefined> | null | undefined;
-                                            surname: string | number | bigint | boolean | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<string | number | bigint | boolean | ReactPortal | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | null | undefined> | null | undefined;
-                                        }) => (
-                                            <option key={teacher._id} value={teacher._id}>
-                                                {teacher.name} {teacher.surname}
-                                            </option>
-                                        )) || (
-                                            <option disabled>No teachers available</option>
-                                        )}
-                                    </select>
-                                )}
-                            </div>
-
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-300 mb-2">Deadline</label>
                                     <input
                                         type="datetime-local"
                                         required
+                                        min={getCurrentDateTime()}
                                         value={taskForm.deadline}
                                         onChange={(e) => setTaskForm({...taskForm, deadline: e.target.value})}
                                         className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700/50 rounded-xl text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
@@ -258,7 +239,7 @@ const CreateTaskModal = ({showCreateModal, setShowCreateModal}: CreateTaskModalP
                                         value={taskForm.maxPoints}
                                         onChange={(e) => setTaskForm({
                                             ...taskForm,
-                                            maxPoints: parseInt(e.target.value)
+                                            maxPoints: parseInt(e.target.value) || 0
                                         })}
                                         className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700/50 rounded-xl text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                                     />
@@ -283,7 +264,7 @@ const CreateTaskModal = ({showCreateModal, setShowCreateModal}: CreateTaskModalP
                                         })}
                                         className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700/50 rounded-xl text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                                     >
-                                        {groupsData?.map((group) => (
+                                        {groupsData?.map((group: any) => (
                                             <option key={group._id} value={group._id} className="bg-gray-800">
                                                 {group.group}
                                             </option>

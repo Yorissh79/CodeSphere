@@ -36,7 +36,6 @@ userSchema.pre<IUser>("save", async function (next) {
 
 userSchema.methods.passwordControl = async function (password: string) {
     return await bcrypt.compare(password, this.password);
-
 };
 
 const userModel: Model<IUser> = mongoose.model<IUser>("User", userSchema);

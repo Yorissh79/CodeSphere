@@ -74,11 +74,10 @@ import {
 import { studentValid } from "../middleware/studentValid";
 import {
     createTask,
-    getTasksForTeacher,
-    getTasksForStudent,
-    submitTask,
-    gradeSubmission,
-    getTaskSubmissions
+    getAllTasks,
+    getTaskById,
+    deleteAllTasks,
+    deleteTaskById
 } from "../controllers/taskController";
 
 import {createComment, deleteComment, getCommentsByAuthor, getCommentsBySubmission, getCommentStats, updateComment} from "../controllers/commentController"
@@ -158,11 +157,10 @@ router.get("/question/quiz/:quizId", getQuestionsByQuiz);
 router.delete("/question/:id", validTeacherOrAdmin, deleteQuestion);
 
 router.post("/tasks/create", validTeacherOrAdmin, upload.array("files", 5), createTask);
-router.get("/tasks/teacher", checkTeacherAuth, getTasksForTeacher);
-router.get("/tasks/student", studentValid, getTasksForStudent);
-router.post("/tasks/submit", studentValid, submitTask);
-router.post("/tasks/grade/:submissionId", validTeacherOrAdmin, gradeSubmission);
-router.get("/tasks/submissions/:taskId", validTeacherOrAdmin, getTaskSubmissions);
+router.get("/tasks/", getAllTasks);
+router.get("/tasks/:id", studentValid, getTaskById);
+router.post("/tasks/delete", validTeacherOrAdmin, deleteAllTasks);
+router.get("/tasks/delete/:taskId", validTeacherOrAdmin, deleteTaskById);
 
 // Submission Routes
 router.post("/submissions/create", studentValid, createSubmission as any);
@@ -171,7 +169,6 @@ router.get("/submissions/:id", getSubmissionById as any);
 router.put("/submissions/:id", updateSubmission as any);
 router.delete("/submissions/:id", deleteSubmission as any);
 router.get("/submissions/task/:taskId", getSubmissionsByTask as any);
-router.post("/submissions/grade/:id", validTeacherOrAdmin, gradeSubmission);
 router.get("/submissions/stats", validTeacherOrAdmin, getSubmissionStats as any);
 
 // Comment Routes

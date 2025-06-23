@@ -1,16 +1,35 @@
+// types/api.ts
 export interface Task {
-    allowLateSubmission: Element;
-    maxPoints: number;
-    assignedGroups: any;
-    submissionCount: number;
-    totalStudents: number;
-    id: string;
+    _id: string;
     title: string;
     description: string;
-    dueDate: string;
-    files?: File[];
+    teacherId: {
+        _id: string;
+        name: string;
+        surname: string;
+        email: string;
+    };
+    assignedGroups: string[];
+    attachments: {
+        type: 'text' | 'image' | 'link';
+        content: string;
+        filename?: string;
+        originalName?: string;
+    }[];
+    deadline: string; // ISO date string
+    allowLateSubmission: string;
+    maxPoints: string;
     createdAt: string;
     updatedAt: string;
+    dueDate?: string; // For frontend compatibility
+    submissionCount?: number; // Optional, may be added by backend
+    totalStudents?: number; // Optional, may be added by backend
+}
+
+export interface Pagination {
+    currentPage: number;
+    totalPages: number;
+    totalTasks: number;
 }
 
 export interface CreateTaskRequest {
@@ -25,58 +44,24 @@ export interface CreateTaskRequest {
 }
 
 export interface Submission {
-    id: string;
+    _id: string;
     taskId: string;
-    studentId: string;
-    content: string;
-    grade?: number;
-    feedback?: string;
-    status: 'pending' | 'submitted' | 'graded';
+    studentId: {
+        _id: string;
+        name: string;
+        surname: string;
+        email: string;
+        group: string;
+    };
+    githubUrl: string;
+    isLate: boolean;
     submittedAt: string;
-    gradedAt?: string;
-}
-
-export interface CreateSubmissionRequest {
-    taskId: string;
-    content: string;
-}
-
-export interface UpdateSubmissionRequest {
-    content?: string;
-    status?: 'pending' | 'submitted' | 'graded';
+    points?: string;
+    feedback?: string;
+    status?: string;
 }
 
 export interface GradeSubmissionRequest {
-    grade: number;
+    points: number;
     feedback?: string;
-}
-
-export interface Comment {
-    id: string;
-    submissionId: string;
-    authorId: string;
-    content: string;
-    createdAt: string;
-    updatedAt: string;
-}
-
-export interface CreateCommentRequest {
-    content: string;
-}
-
-export interface UpdateCommentRequest {
-    content: string;
-}
-
-export interface SubmissionStats {
-    totalSubmissions: number;
-    pendingSubmissions: number;
-    gradedSubmissions: number;
-    averageGrade: number;
-}
-
-export interface CommentStats {
-    totalComments: number;
-    commentsThisWeek: number;
-    mostActiveSubmission: string;
 }
