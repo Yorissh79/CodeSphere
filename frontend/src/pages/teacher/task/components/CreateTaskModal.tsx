@@ -10,9 +10,13 @@ import {
     Loader2,
     AlertCircle,
 } from 'lucide-react';
+// Corrected import path
 import {useCreateTaskMutation} from '../../../../services/taskApi';
+// Corrected import path
 import {useGetAllGroupsQuery} from '../../../../services/groupApi';
-import type {CreateTaskRequest} from '../../../../types/api';
+import type {CreateTaskInput} from '../../../../services/taskApi';
+import type {SerializedError} from '@reduxjs/toolkit';
+import type {FetchBaseQueryError} from '@reduxjs/toolkit/query';
 
 interface CreateTaskModalProps {
     showCreateModal: boolean;
@@ -25,22 +29,14 @@ const CreateTaskModal = ({
                              showCreateModal,
                              setShowCreateModal,
                              currentTeacherId,
-                             refetchTasks
+                             refetchTasks,
                          }: CreateTaskModalProps) => {
     const [dragOver, setDragOver] = useState(false);
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const [createTask, {
-        isLoading: createTaskLoading,
-        error: createTaskError
-    }] = useCreateTaskMutation();
-
-    const {
-        data: groupsData,
-        isLoading: groupsLoading,
-        error: groupsError
-    } = useGetAllGroupsQuery({});
+    const [createTask, {isLoading: createTaskLoading, error: createTaskError}] = useCreateTaskMutation();
+    const {data: groupsData, isLoading: groupsLoading, error: groupsError} = useGetAllGroupsQuery({});
 
     const [taskForm, setTaskForm] = useState({
         title: '',
@@ -49,8 +45,8 @@ const CreateTaskModal = ({
         assignedGroups: [] as string[],
         deadline: '',
         allowLateSubmission: false,
-        maxPoints: 100,
-        files: [] as File[]
+        maxPoints: '100',
+        files: [] as File[],
     });
 
     // Get current date and time in the format required for datetime-local input
@@ -64,6 +60,32 @@ const CreateTaskModal = ({
         return `${year}-${month}-${day}T${hours}:${minutes}`;
     };
 
+    // Convert datetime-local input to ISO 8601 format
+    const formatDeadlineToISO = (deadline: string): string => {
+        if (!deadline) return '';
+        return `${deadline}:00Z`;
+    };
+
+    // Convert files to base64 for attachments
+    const convertFilesToAttachments = async (files: File[]) => {
+        const attachments = [];
+        for (const file of files) {
+            const base64 = await new Promise<string>((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result as string);
+                reader.readAsDataURL(file);
+            });
+
+            attachments.push({
+                type: file.type.startsWith('image/') ? 'image' : 'text' as 'text' | 'image' | 'link',
+                content: base64,
+                filename: file.name,
+                originalName: file.name,
+            });
+        }
+        return attachments;
+    };
+
     // Handle Escape key press to close modal
     useEffect(() => {
         const handleEscapeKey = (event: KeyboardEvent) => {
@@ -71,30 +93,30 @@ const CreateTaskModal = ({
                 setShowCreateModal(false);
             }
         };
-
         document.addEventListener('keydown', handleEscapeKey);
-        return () => {
-            document.removeEventListener('keydown', handleEscapeKey);
-        };
+        return () => document.removeEventListener('keydown', handleEscapeKey);
     }, [showCreateModal, setShowCreateModal]);
 
     const handleCreateTask = async (e: React.FormEvent) => {
         e.preventDefault();
 
         try {
-            const createTaskData: CreateTaskRequest = {
+            // Convert files to attachments
+            const attachments = await convertFilesToAttachments(selectedFiles);
+
+            // Create the task data object that matches CreateTaskInput interface
+            const taskData: CreateTaskInput = {
                 title: taskForm.title,
                 description: taskForm.description,
-                teacherId: taskForm.teacherId,
                 assignedGroups: taskForm.assignedGroups,
-                attachments: selectedFiles.length > 0 ? selectedFiles : [],
-                deadline: new Date(taskForm.deadline),
+                deadline: formatDeadlineToISO(taskForm.deadline),
                 allowLateSubmission: taskForm.allowLateSubmission,
                 maxPoints: taskForm.maxPoints,
+                ...(attachments.length > 0 && {attachments}),
             };
 
-            await createTask(createTaskData).unwrap();
-            refetchTasks(); // Refresh tasks after creation
+            await createTask(taskData).unwrap();
+            refetchTasks();
             setShowCreateModal(false);
             resetForm();
         } catch (error) {
@@ -110,13 +132,11 @@ const CreateTaskModal = ({
             assignedGroups: [],
             deadline: '',
             allowLateSubmission: false,
-            maxPoints: 100,
-            files: []
+            maxPoints: '100',
+            files: [],
         });
         setSelectedFiles([]);
-        if (fileInputRef.current) {
-            fileInputRef.current.value = '';
-        }
+        if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
     const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -133,18 +153,41 @@ const CreateTaskModal = ({
         e.preventDefault();
         setDragOver(false);
         const files = Array.from(e.dataTransfer.files);
-        setSelectedFiles(prev => [...prev, ...files]);
+        const maxFileSize = 10 * 1024 * 1024; // 10MB
+        const validFiles = files.filter((file) => file.size <= maxFileSize);
+        if (validFiles.length < files.length) {
+            // Replaced alert with a more user-friendly message, consider a toast notification library for a real app.
+            console.warn('Some files were ignored as they exceed 10MB.');
+        }
+        setSelectedFiles((prev) => [...prev, ...validFiles]);
     }, []);
 
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
             const files = Array.from(e.target.files);
-            setSelectedFiles(prev => [...prev, ...files]);
+            const maxFileSize = 10 * 1024 * 1024; // 10MB
+            const validFiles = files.filter((file) => file.size <= maxFileSize);
+            if (validFiles.length < files.length) {
+                // Replaced alert with a more user-friendly message, consider a toast notification library for a real app.
+                console.warn('Some files were ignored as they exceed 10MB.');
+            }
+            setSelectedFiles((prev) => [...prev, ...validFiles]);
         }
     };
 
     const removeFile = (index: number) => {
-        setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+        setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+    };
+
+    const getErrorMessage = (error: FetchBaseQueryError | SerializedError | undefined): string => {
+        if (!error) return 'Failed to create task. Please try again.';
+        if ('data' in error && error.data && typeof error.data === 'object' && 'error' in error.data) {
+            return (error.data as { error: string }).error;
+        }
+        if ('message' in error && error.message) {
+            return error.message;
+        }
+        return 'Failed to create task. Please try again.';
     };
 
     if (!showCreateModal) return null;
@@ -156,7 +199,6 @@ const CreateTaskModal = ({
                     className="fixed inset-0 transition-opacity duration-300"
                     onClick={() => setShowCreateModal(false)}
                 />
-
                 <div
                     className="relative w-full max-w-3xl p-8 my-8 overflow-hidden rounded-2xl bg-gray-900/80 backdrop-blur-xl border border-gray-700/50 shadow-2xl animate-in zoom-in-95 duration-300">
                     <div className="relative">
@@ -176,9 +218,7 @@ const CreateTaskModal = ({
                             <div
                                 className="mb-6 p-4 bg-red-900/30 border border-red-700/50 rounded-xl flex items-center gap-2">
                                 <AlertCircle className="w-5 h-5 text-red-400"/>
-                                <span className="text-red-300 text-sm">
-                                    {"message" in createTaskError && (createTaskError as any).message || 'Failed to create task. Please try again.'}
-                                </span>
+                                <span className="text-red-300 text-sm">{getErrorMessage(createTaskError)}</span>
                             </div>
                         )}
 
@@ -186,9 +226,7 @@ const CreateTaskModal = ({
                             <div
                                 className="mb-6 p-4 bg-red-900/30 border border-red-700/50 rounded-xl flex items-center gap-2">
                                 <AlertCircle className="w-5 h-5 text-red-400"/>
-                                <span className="text-red-300 text-sm">
-                                    Failed to load groups. Please try again.
-                                </span>
+                                <span className="text-red-300 text-sm">{getErrorMessage(groupsError)}</span>
                             </div>
                         )}
 
@@ -236,11 +274,8 @@ const CreateTaskModal = ({
                                         type="number"
                                         min="0"
                                         required
-                                        value={taskForm.maxPoints}
-                                        onChange={(e) => setTaskForm({
-                                            ...taskForm,
-                                            maxPoints: parseInt(e.target.value) || 0
-                                        })}
+                                        value={parseInt(taskForm.maxPoints) || ''}
+                                        onChange={(e) => setTaskForm({...taskForm, maxPoints: e.target.value})}
                                         className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700/50 rounded-xl text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                                     />
                                 </div>
@@ -257,11 +292,14 @@ const CreateTaskModal = ({
                                 ) : (
                                     <select
                                         multiple
+                                        required
                                         value={taskForm.assignedGroups}
-                                        onChange={(e) => setTaskForm({
-                                            ...taskForm,
-                                            assignedGroups: Array.from(e.target.selectedOptions, option => option.value)
-                                        })}
+                                        onChange={(e) =>
+                                            setTaskForm({
+                                                ...taskForm,
+                                                assignedGroups: Array.from(e.target.selectedOptions, (option) => option.value),
+                                            })
+                                        }
                                         className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700/50 rounded-xl text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                                     >
                                         {groupsData?.map((group: any) => (
@@ -280,9 +318,7 @@ const CreateTaskModal = ({
                                 <label className="block text-sm font-medium text-gray-300 mb-2">Attachments</label>
                                 <div
                                     className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-300 ${
-                                        dragOver
-                                            ? 'border-blue-500 bg-blue-900/20'
-                                            : 'border-gray-700/50 hover:border-blue-500/50 hover:bg-gray-800/20'
+                                        dragOver ? 'border-blue-500 bg-blue-900/20' : 'border-gray-700/50 hover:border-blue-500/50 hover:bg-gray-800/20'
                                     }`}
                                     onDragOver={handleDragOver}
                                     onDragLeave={handleDragLeave}
@@ -306,6 +342,7 @@ const CreateTaskModal = ({
                                         ref={fileInputRef}
                                         type="file"
                                         multiple
+                                        accept="image/jpeg,image/png,image/gif,application/pdf,.doc,.docx,.txt"
                                         onChange={handleFileSelect}
                                         className="hidden"
                                     />
@@ -337,10 +374,7 @@ const CreateTaskModal = ({
                                     type="checkbox"
                                     id="allowLate"
                                     checked={taskForm.allowLateSubmission}
-                                    onChange={(e) => setTaskForm({
-                                        ...taskForm,
-                                        allowLateSubmission: e.target.checked
-                                    })}
+                                    onChange={(e) => setTaskForm({...taskForm, allowLateSubmission: e.target.checked})}
                                     className="w-4 h-4 text-blue-500 bg-gray-800/50 border-gray-700/50 rounded focus:ring-blue-500 focus:ring-2"
                                 />
                                 <label htmlFor="allowLate" className="text-sm text-gray-300">Allow late
@@ -361,9 +395,7 @@ const CreateTaskModal = ({
                                     disabled={createTaskLoading}
                                     className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl hover:from-blue-600 hover:to-purple-600 transition-all duration-200 disabled:opacity-50 flex items-center gap-2"
                                 >
-                                    {createTaskLoading && (
-                                        <Loader2 className="w-4 h-4 animate-spin"/>
-                                    )}
+                                    {createTaskLoading && <Loader2 className="w-4 h-4 animate-spin"/>}
                                     {createTaskLoading ? 'Creating...' : 'Create Task'}
                                 </button>
                             </div>

@@ -1,12 +1,12 @@
 import jwt from "jsonwebtoken";
-import { Request, Response } from "express";
+import {NextFunction, Request, Response} from "express";
 import teacherModel from "../models/teacherModel";
 
-export const checkTeacherAuth = async (req: Request, res: Response): Promise<any> => {
+export const checkTeacherAuth = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
     const token = req.cookies.jwt;
 
     if (!token) {
-        return res.status(401).json({ error: "Not authenticated" });
+        return res.status(401).json({ error: "Not authenticatsdsfed" });
     }
 
     try {
@@ -19,6 +19,7 @@ export const checkTeacherAuth = async (req: Request, res: Response): Promise<any
         }
 
         res.status(200).json({ user });
+        next();
     } catch (err) {
         return res.status(401).json({ error: "Invalid token" });
     }

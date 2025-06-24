@@ -1,7 +1,22 @@
 import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { taskModel, ITask } from '../models/taskModel';
+import { fileUploadService } from './fileUploadService';
 import mongoose from 'mongoose';
+import { User } from '../types/types'; // or wherever your User type lives
+
+interface AuthenticatedRequest extends Request {
+    user: User;
+    files?: Express.Multer.File[]; // Add files property for multer
+}
+
+// Define the attachment schema for Zod
+const attachmentSchema = z.object({
+    type: z.enum(['text', 'image', 'link', 'file']),
+    content: z.string(),
+    filename: z.string().optional(),
+    originalName: z.string().optional(),
+});
 
 // Zod Schemas
 const createTaskSchema = z.object({
@@ -9,20 +24,25 @@ const createTaskSchema = z.object({
     description: z.string().min(1, 'Description is required'),
     assignedGroups: z.array(z.string()).min(1, 'At least one group must be assigned'),
     deadline: z.string().datetime(),
-    allowLateSubmission: z.string(),
+    allowLateSubmission: z.boolean(),
     maxPoints: z.string().refine(val => !isNaN(parseInt(val, 10)) && parseInt(val, 10) >= 0, {
         message: 'Points must be a valid non-negative number',
     }),
-    attachments: z
-        .array(
-            z.object({
-                type: z.enum(['text', 'image', 'link']),
-                content: z.string(),
-                filename: z.string().optional(),
-                originalName: z.string().optional(),
-            })
-        )
-        .optional(),
+    // Now expecting a unified 'attachments' array from the frontend
+    attachments: z.array(attachmentSchema).optional(),
+});
+
+const updateTaskSchema = z.object({
+    title: z.string().min(1, 'Title is required').optional(),
+    description: z.string().min(1, 'Description is required').optional(),
+    assignedGroups: z.array(z.string()).min(1, 'At least one group must be assigned').optional(),
+    deadline: z.string().datetime().optional(),
+    allowLateSubmission: z.boolean().optional(),
+    maxPoints: z.string().refine(val => !isNaN(parseInt(val, 10)) && parseInt(val, 10) >= 0, {
+        message: 'Points must be a valid non-negative number',
+    }).optional(),
+    // Now expecting a unified 'attachments' array from the frontend
+    attachments: z.array(attachmentSchema).optional(),
 });
 
 const getTasksQuerySchema = z.object({
@@ -43,36 +63,183 @@ const getTasksQuerySchema = z.object({
     sortOrder: z.enum(['asc', 'desc']).default('desc'),
 });
 
+
 // Create Task
-export const createTask = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const createTask = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<any> => {
     try {
-        const result = createTaskSchema.safeParse(req.body);
+        // Check for authenticated user
+        if (!req.user || !req.user._id) {
+            res.status(401).json({ error: 'User not authenticated' });
+            return;
+        }
+        const teacherId = req.user._id;
+
+        let parsedBody = { ...req.body };
+
+        // Parse assignedGroups if it's a string (from form-data)
+        if (typeof req.body.assignedGroups === 'string') {
+            try {
+                parsedBody.assignedGroups = JSON.parse(req.body.assignedGroups);
+            } catch (e) {
+                console.error('Failed to parse assignedGroups:', e);
+                res.status(400).json({ error: 'Invalid assignedGroups format' });
+                return;
+            }
+        }
+
+        // Parse attachments if it's a string (from form-data, if no files are directly uploaded)
+        // This handles cases where attachments are sent as JSON string in form-data
+        if (typeof req.body.attachments === 'string') {
+            try {
+                parsedBody.attachments = JSON.parse(req.body.attachments);
+            } catch (e) {
+                console.error('Failed to parse attachments:', e);
+                // If parsing fails, treat as empty array
+                parsedBody.attachments = [];
+            }
+        } else if (!req.body.attachments) {
+            // If attachments field is completely missing, ensure it's an empty array for processing
+            parsedBody.attachments = [];
+        }
+
+
+        const result = createTaskSchema.safeParse(parsedBody);
         if (!result.success) {
+            console.error('Validation error:', result.error);
             res.status(400).json({ error: result.error.flatten() });
             return;
         }
 
-        const { title, description, assignedGroups, deadline, allowLateSubmission, maxPoints, attachments } = result.data;
-        const teacherId = req.body.user._id; // From auth middleware
+        const { title, description, assignedGroups, deadline, allowLateSubmission, maxPoints, attachments: bodyAttachments } = result.data;
+
+        // Process all attachments: files uploaded via multer and attachments from request body
+        // The fileUploadService will now combine and differentiate
+        const processedAttachments = fileUploadService.processTaskAttachments(
+            req.files as Express.Multer.File[], // Files uploaded via Multer (Cloudinary URLs)
+            bodyAttachments || [] // Attachments from the request body (could be existing URLs or new base64)
+        );
+
+        console.log('Processed attachments:', processedAttachments);
 
         const newTask = await taskModel.create({
             title,
             description,
             teacherId,
             assignedGroups,
-            attachments: attachments || [],
+            attachments: processedAttachments,
             deadline,
             allowLateSubmission,
             maxPoints,
         });
 
+        // Populate the teacher information for the response
+        const populatedTask = await taskModel
+            .findById(newTask._id)
+            .populate('teacherId', 'name surname email')
+            .lean();
+
         res.status(201).json({
             message: 'Task created successfully',
-            task: newTask,
+            task: populatedTask,
         });
     } catch (error) {
         console.error('Create task error:', error);
         next(new Error('Internal server error'));
+    }
+};
+
+// Update Task By ID
+export const updateTaskById = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        if (!req.user || !req.user._id) {
+            res.status(401).json({ error: 'User not authenticated' });
+            return;
+        }
+
+        const { id } = req.params;
+
+        if (!mongoose.isValidObjectId(id)) {
+            res.status(400).json({ error: 'Invalid task ID' });
+            return;
+        }
+
+        let parsedBody = { ...req.body };
+
+        // Parse assignedGroups if it's a string (from form-data)
+        if (typeof req.body.assignedGroups === 'string') {
+            try {
+                parsedBody.assignedGroups = JSON.parse(req.body.assignedGroups);
+            } catch (e) {
+                console.error('Failed to parse assignedGroups:', e);
+                res.status(400).json({ error: 'Invalid assignedGroups format' });
+                return;
+            }
+        }
+
+        // Parse attachments if it's a string (from form-data, if no files are directly uploaded)
+        if (typeof req.body.attachments === 'string') {
+            try {
+                parsedBody.attachments = JSON.parse(req.body.attachments);
+            } catch (e) {
+                console.error('Failed to parse attachments:', e);
+                parsedBody.attachments = [];
+            }
+        } else if (!req.body.attachments) {
+            parsedBody.attachments = [];
+        }
+
+
+        const result = updateTaskSchema.safeParse(parsedBody);
+        if (!result.success) {
+            console.error('Validation error:', result.error);
+            res.status(400).json({ error: result.error.flatten() });
+            return;
+        }
+
+        const task = await taskModel.findById(id);
+        if (!task) {
+            res.status(404).json({ error: 'Task not found' });
+            return;
+        }
+
+        // Verify teacher owns this task or user is admin
+        if (task.teacherId.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+            res.status(403).json({ error: 'Unauthorized to update this task' });
+            return;
+        }
+
+        const { title, description, assignedGroups, deadline, allowLateSubmission, maxPoints, attachments: bodyAttachments } = result.data;
+
+        // Prepare update object
+        const updateFields: Partial<ITask> = {};
+        if (title !== undefined) updateFields.title = title;
+        if (description !== undefined) updateFields.description = description;
+        if (assignedGroups !== undefined) updateFields.assignedGroups = assignedGroups;
+        if (deadline !== undefined) updateFields.deadline = deadline;
+        if (allowLateSubmission !== undefined) updateFields.allowLateSubmission = allowLateSubmission;
+        if (maxPoints !== undefined) updateFields.maxPoints = maxPoints;
+
+        // Process attachments: files uploaded via multer and attachments from request body
+        // This will combine existing attachments (sent from frontend) and new files (uploaded via multer).
+        const processedAttachments = fileUploadService.processTaskAttachments(
+            req.files as Express.Multer.File[],
+            bodyAttachments || []
+        );
+        updateFields.attachments = processedAttachments;
+
+
+        const updatedTask = await taskModel
+            .findByIdAndUpdate(id, updateFields, { new: true, runValidators: true })
+            .populate('teacherId', 'name surname email')
+            .lean();
+
+        res.json({
+            message: 'Task updated successfully',
+            task: updatedTask,
+        });
+    } catch (error) {
+        console.error('Update task by ID error:', error);
+        next(new Error('Failed to update task'));
     }
 };
 
@@ -195,7 +362,7 @@ export const getTaskById = async (req: Request, res: Response, next: NextFunctio
 // Delete All Tasks (Admin Only)
 export const deleteAllTasks = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-        if (req.body.user.role !== 'admin') {
+        if (!req.user || req.user.role !== 'admin') {
             res.status(403).json({ error: 'Unauthorized: Admin access required' });
             return;
         }
@@ -211,22 +378,16 @@ export const deleteAllTasks = async (req: Request, res: Response, next: NextFunc
 // Delete Task By ID
 export const deleteTaskById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-        const { id } = req.params;
-
-        if (!mongoose.isValidObjectId(id)) {
-            res.status(400).json({ error: 'Invalid task ID' });
+        if (!req.user || !req.user._id) {
+            res.status(401).json({ error: 'User not authenticated' });
             return;
         }
+
+        const { id } = req.params;
 
         const task = await taskModel.findById(id);
         if (!task) {
             res.status(404).json({ error: 'Task not found' });
-            return;
-        }
-
-        // Verify teacher owns this task or user is admin
-        if (task.teacherId.toString() !== req.body.user._id.toString() && req.body.user.role !== 'admin') {
-            res.status(403).json({ error: 'Unauthorized to delete this task' });
             return;
         }
 

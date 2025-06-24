@@ -29,7 +29,7 @@ const Header = () => {
             transition={{duration: 0.4, ease: 'easeOut'}}
             className="sticky top-0 z-40 bg-white/90 dark:bg-gray-900/90 backdrop-blur-lg border-b border-gray-200/50 dark:border-gray-700/50"
         >
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg8">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"> {/* Corrected classname from lg8 to lg:px-8 */}
                 <div className="flex items-center justify-between h-16">
                     <motion.div
                         className="flex items-center space-x-3"

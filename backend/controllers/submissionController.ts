@@ -3,7 +3,7 @@ import { submissionModel, ISubmission } from '../models/submissionModel';
 import mongoose from 'mongoose';
 import { z } from 'zod';
 
-interface AuthenticatedRequest extends Request {
+interface AuthenticatedRequest extends Omit<Request, 'user'> {
     user?: {
         id: string;
         role: string;

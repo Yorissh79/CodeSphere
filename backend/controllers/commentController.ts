@@ -4,7 +4,7 @@ import { commentModel } from '../models/commentModel';
 import { submissionModel } from '../models/submissionModel';
 import mongoose from 'mongoose';
 
-interface AuthenticatedRequest extends Request {
+interface AuthenticatedRequest extends Omit<Request, 'user'> {
     user?: {
         id: string;
         role: string;

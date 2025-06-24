@@ -156,7 +156,7 @@ export const logoutGoogle = (async (req: Request, res: Response) => {
 // GET /user - Get current user (existing)
 export const getGoogle = (async (req: Request, res: Response) => {
     if (req.isAuthenticated()) {
-        const { name, email, _id } = req.user as IUser;
+        const { name, email, _id } = req.user as unknown as IUser;
         return res.status(200).json({ id: _id, name, email });
     }
     res.status(401).json({ error: 'Unauthorized' });

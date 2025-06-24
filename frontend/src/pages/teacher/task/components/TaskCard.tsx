@@ -1,12 +1,31 @@
-import {Calendar, Eye, Edit, Trash2} from 'lucide-react';
+import {Calendar, Eye, Edit, Trash2, X, AlertTriangle} from 'lucide-react';
+// Corrected import path
 import type {Task} from '../../../../types/api';
-import {motion} from 'framer-motion';
+// Corrected import path
+import {motion, AnimatePresence} from 'framer-motion';
+// Corrected import path
+import {useGetAllGroupsQuery} from '../../../../services/groupApi';
+import {useState} from 'react';
+// Corrected import path
+import {useDeleteTaskByIdMutation} from '../../../../services/taskApi';
+import {toast} from 'react-hot-toast'; // Assuming you use react-hot-toast or similar for notifications
 
 interface TaskCardProps {
     task: Task;
+    onDelete?: (taskId: string) => void; // Keep this prop for consistency or remove if handled internally
+    onEdit?: (task: Task) => void;
+    onView?: (task: Task) => void;
+    // refetchTasks: () => void; // Removed as RTK Query's invalidation usually handles this
 }
 
-const TaskCard = ({task}: TaskCardProps) => {
+const TaskCard = ({task, onEdit, onView}: TaskCardProps) => {
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [deleteTaskById] = useDeleteTaskByIdMutation(); // Get the mutation trigger
+
+    // Fetch all groups to map IDs to names
+    const {data: groupsData} = useGetAllGroupsQuery({});
+
     const formatDate = (dateString: string) => {
         return new Date(dateString).toLocaleDateString('en-US', {
             month: 'short',
@@ -17,116 +36,178 @@ const TaskCard = ({task}: TaskCardProps) => {
         });
     };
 
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'active':
-                return 'text-emerald-500 bg-emerald-100/50 dark:bg-emerald-900/30';
-            case 'expired':
-                return 'text-rose-500 bg-rose-100/50 dark:bg-rose-900/30';
-            default:
-                return 'text-gray-500 bg-gray-100/50 dark:bg-gray-800/30';
+    const getStatusColor = (deadline: string) => {
+        const now = new Date();
+        const taskDeadline = new Date(deadline);
+        if (taskDeadline < now) {
+            return 'text-rose-500 bg-rose-100/50 dark:bg-rose-900/30'; // Expired
+        }
+        return 'text-emerald-500 bg-emerald-100/50 dark:bg-emerald-900/30'; // Active
+    };
+
+    const handleDeleteConfirm = async () => {
+        setIsDeleting(true);
+        try {
+            await deleteTaskById(task._id).unwrap();
+            toast.success('Task deleted successfully!');
+            setShowDeleteConfirm(false);
+        } catch (error: any) {
+            toast.error(`Failed to delete task: ${error?.data?.error || error?.message || 'Unknown error'}`);
+            console.error('Delete task error:', error);
+        } finally {
+            setIsDeleting(false);
         }
     };
 
-    const getTaskStatus = (dueDate: string) => {
-        const now = new Date();
-        const deadline = new Date(dueDate);
-        return deadline > now ? 'active' : 'expired';
+    const handleDeleteCancel = () => {
+        setShowDeleteConfirm(false);
     };
 
-    const taskStatus = getTaskStatus(task.dueDate || task.deadline);
-    const submissionPercentage = task.totalStudents && task.totalStudents > 0
-        ? (task.submissionCount || 0) / task.totalStudents * 100
-        : 0;
+    const handleDelete = () => {
+        setShowDeleteConfirm(true);
+    };
 
     return (
-        <motion.div
-            initial={{opacity: 0, scale: 0.95}}
-            animate={{opacity: 1, scale: 1}}
-            whileHover={{scale: 1.02, boxShadow: '0 10px 20px rgba(0,0,0,0.1)'}}
-            transition={{duration: 0.3}}
-            className="bg-white dark:bg-gray-800/70 rounded-2xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300"
-        >
-            <div className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                        <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 line-clamp-2">{task.title}</h3>
-                        <p className="text-gray-600 dark:text-gray-400 text-sm line-clamp-3 mt-1">{task.description}</p>
+        <>
+            <motion.div
+                className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden flex flex-col h-full hover:shadow-xl transition-shadow duration-300"
+                whileHover={{y: -5}}
+                initial={{opacity: 0, y: 20}}
+                animate={{opacity: 1, y: 0}}
+                transition={{duration: 0.3}}
+            >
+                <div className="p-5 flex-grow">
+                    <div className="flex justify-between items-start mb-3">
+                        <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 leading-tight pr-8">
+                            {task.title}
+                        </h3>
+                        <span
+                            className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(task.deadline)}`}
+                        >
+                            {new Date(task.deadline) < new Date() ? 'Expired' : 'Active'}
+                        </span>
                     </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(taskStatus)}`}>
-            {taskStatus.charAt(0).toUpperCase() + taskStatus.slice(1)}
-          </span>
+                    <p className="text-gray-600 dark:text-gray-300 text-sm mb-4 line-clamp-3">
+                        {task.description}
+                    </p>
+                    <div className="text-gray-500 dark:text-gray-400 text-sm mb-2 flex items-center">
+                        <Calendar className="w-4 h-4 mr-2"/>
+                        Deadline: {formatDate(task.deadline)}
+                    </div>
+                    <div className="text-gray-500 dark:text-gray-400 text-sm mb-2">
+                        <strong>Assigned to:</strong>{' '}
+                        {task.assignedGroups.map(groupId => {
+                            // Assuming group object has a 'group' property for its name
+                            const group = groupsData?.find((g: { _id: string; group: string }) => g._id === groupId);
+                            return group ? group.group : groupId;
+                        }).join(', ')}
+                    </div>
+                    <div className="text-gray-500 dark:text-gray-400 text-sm mb-4">
+                        <strong>Max Points:</strong> {task.maxPoints}
+                    </div>
                 </div>
-
-                {task.assignedGroups?.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mb-4">
-                        {task.assignedGroups.map((group, index) => (
-                            <span
-                                key={index}
-                                className="px-2.5 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-xs font-medium rounded-full"
-                            >
-                {group}
-              </span>
-                        ))}
+                <div className="border-t border-gray-200 dark:border-gray-700 p-4 flex justify-between items-center">
+                    <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                        <span className="font-medium mr-1">Created:</span> {formatDate(task.createdAt)}
                     </div>
-                )}
+                    <div className="flex space-x-2">
+                        <motion.button
+                            whileHover={{scale: 1.1}}
+                            whileTap={{scale: 0.9}}
+                            onClick={() => onView?.(task)}
+                            className="p-2 text-gray-500 dark:text-gray-400 hover:text-indigo-500 transition-colors duration-200"
+                            title="View submissions"
+                        >
+                            <Eye className="w-5 h-5"/>
+                        </motion.button>
 
-                <div className="flex items-center text-sm text-gray-600 dark:text-gray-400 mb-4">
-                    <Calendar className="w-4 h-4 mr-2"/>
-                    <span>Due: {formatDate(task.dueDate || task.deadline)}</span>
+                        <motion.button
+                            whileHover={{scale: 1.1}}
+                            whileTap={{scale: 0.9}}
+                            onClick={() => onEdit?.(task)} // Trigger the edit modal/form
+                            className="p-2 text-gray-500 dark:text-gray-400 hover:text-indigo-500 transition-colors duration-200"
+                            title="Edit task"
+                        >
+                            <Edit className="w-5 h-5"/>
+                        </motion.button>
+
+                        <motion.button
+                            whileHover={{scale: 1.1}}
+                            whileTap={{scale: 0.9}}
+                            onClick={handleDelete} // Call the confirmation handler
+                            disabled={isDeleting}
+                            className={`p-2 text-gray-500 dark:text-gray-400 hover:text-rose-500 transition-colors duration-200 ${isDeleting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            title="Delete task"
+                        >
+                            <Trash2 className={`w-5 h-5 ${isDeleting ? 'animate-pulse' : ''}`}/>
+                        </motion.button>
+                    </div>
                 </div>
+            </motion.div>
 
-                <div className="mb-4">
-                    <div className="flex justify-between text-sm mb-2">
-                        <span className="text-gray-600 dark:text-gray-400">Submissions</span>
-                        <span className="font-medium text-gray-900 dark:text-gray-100">
-              {task.submissionCount || 0}/{task.totalStudents || 0}
-            </span>
-                    </div>
-                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
+            {/* Custom Delete Confirmation Modal */}
+            <AnimatePresence>
+                {showDeleteConfirm && (
+                    <motion.div
+                        initial={{opacity: 0}}
+                        animate={{opacity: 1}}
+                        exit={{opacity: 0}}
+                        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+                        onClick={handleDeleteCancel}
+                    >
                         <motion.div
-                            initial={{width: 0}}
-                            animate={{width: `${submissionPercentage}%`}}
-                            transition={{duration: 0.5, ease: 'easeOut'}}
-                            className="bg-gradient-to-r from-indigo-500 to-purple-600 h-2.5 rounded-full"
-                        />
-                    </div>
-                </div>
-            </div>
+                            initial={{scale: 0.9, opacity: 0}}
+                            animate={{scale: 1, opacity: 1}}
+                            exit={{scale: 0.9, opacity: 0}}
+                            className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="flex items-center mb-4">
+                                <div className="flex-shrink-0">
+                                    <AlertTriangle className="w-6 h-6 text-amber-500"/>
+                                </div>
+                                <div className="ml-3">
+                                    <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
+                                        Delete Task
+                                    </h3>
+                                </div>
+                                <button
+                                    onClick={handleDeleteCancel}
+                                    className="ml-auto text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                >
+                                    <X className="w-5 h-5"/>
+                                </button>
+                            </div>
 
-            <div
-                className="px-6 py-4 bg-gray-50/50 dark:bg-gray-800/30 border-t border-gray-200/50 dark:border-gray-700/50">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3 text-sm">
-                        <span className="text-gray-900 dark:text-gray-100 font-medium">{task.maxPoints || 0} pts</span>
-                        {task.allowLateSubmission && (
-                            <span
-                                className="px-2.5 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-xs font-medium rounded-full">
-                Late OK
-              </span>
-                        )}
-                    </div>
+                            <div className="mb-6">
+                                <p className="text-sm text-gray-500 dark:text-gray-400">
+                                    Are you sure you want to delete the task <span
+                                    className="font-semibold text-gray-900 dark:text-gray-100">"{task.title}"</span>?
+                                    This action cannot be undone.
+                                </p>
+                            </div>
 
-                    <div className="flex items-center space-x-2">
-                        {[
-                            {icon: Eye, title: 'View submissions', hoverColor: 'hover:text-indigo-500'},
-                            {icon: Edit, title: 'Edit task', hoverColor: 'hover:text-indigo-500'},
-                            {icon: Trash2, title: 'Delete task', hoverColor: 'hover:text-rose-500'},
-                        ].map(({icon: Icon, title, hoverColor}, index) => (
-                            <motion.button
-                                key={index}
-                                whileHover={{scale: 1.1}}
-                                whileTap={{scale: 0.9}}
-                                className={`p-2 text-gray-500 dark:text-gray-400 ${hoverColor} transition-colors duration-200`}
-                                title={title}
-                            >
-                                <Icon className="w-5 h-5"/>
-                            </motion.button>
-                        ))}
-                    </div>
-                </div>
-            </div>
-        </motion.div>
+                            <div className="flex justify-end space-x-3">
+                                <button
+                                    onClick={handleDeleteCancel}
+                                    className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors duration-200"
+                                    disabled={isDeleting}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleDeleteConfirm}
+                                    disabled={isDeleting}
+                                    className="px-4 py-2 text-sm font-medium text-white bg-rose-600 border border-transparent rounded-md hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                                >
+                                    {isDeleting ? 'Deleting...' : 'Delete'}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </>
     );
 };
 

@@ -77,7 +77,7 @@ import {
     getAllTasks,
     getTaskById,
     deleteAllTasks,
-    deleteTaskById
+    deleteTaskById, updateTaskById
 } from "../controllers/taskController";
 
 import {createComment, deleteComment, getCommentsByAuthor, getCommentsBySubmission, getCommentStats, updateComment} from "../controllers/commentController"
@@ -156,11 +156,12 @@ router.post("/question/create", validTeacherOrAdmin, createQuestion);
 router.get("/question/quiz/:quizId", getQuestionsByQuiz);
 router.delete("/question/:id", validTeacherOrAdmin, deleteQuestion);
 
-router.post("/tasks/create", validTeacherOrAdmin, upload.array("files", 5), createTask);
+router.post("/tasks/create", validTeacherOrAdmin, upload.array("files", 10), createTask as any);
 router.get("/tasks/", getAllTasks);
 router.get("/tasks/:id", studentValid, getTaskById);
-router.post("/tasks/delete", validTeacherOrAdmin, deleteAllTasks);
-router.get("/tasks/delete/:taskId", validTeacherOrAdmin, deleteTaskById);
+router.delete("/tasks/delete", validTeacherOrAdmin, deleteAllTasks);
+router.delete("/tasks/delete/:id", validTeacherOrAdmin, deleteTaskById);
+router.put("/tasks/update/:taskId", validTeacherOrAdmin, updateTaskById as any);
 
 // Submission Routes
 router.post("/submissions/create", studentValid, createSubmission as any);

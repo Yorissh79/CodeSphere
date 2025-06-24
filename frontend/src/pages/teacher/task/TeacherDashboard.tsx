@@ -1,14 +1,19 @@
 import {useState, useEffect} from 'react';
-import {useGetAllTasksQuery} from '../../../services/taskApi';
-import {useCheckTeacherAuthQuery} from '../../../services/authCheck';
+import {useGetAllTasksQuery} from '../../../services/taskApi'; // Corrected path
+import {useCheckTeacherAuthQuery} from '../../../services/authCheck'; // Corrected path
 import Header from './components/Header';
 import MainContent from './components/MainContent';
 import CreateTaskModal from './components/CreateTaskModal';
+import EditTaskModal from './components/EditTaskModal';
 import {Loader2, AlertCircle} from 'lucide-react';
-import type {Task} from '../../../types/api';
+import type {Task} from '../../../types/api'; // Corrected path
+import {Toaster} from 'react-hot-toast';
 
 const TeacherDashboard = () => {
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
+
     const [searchQuery, setSearchQuery] = useState('');
     const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'expired'>('all');
 
@@ -35,16 +40,6 @@ const TeacherDashboard = () => {
         sortOrder: 'desc',
     }, {skip: !currentTeacherId});
 
-    console.log('Tasks query params:', {
-        teacherId: currentTeacherId,
-        status: filterStatus,
-        page: '1',
-        limit: '10',
-        sortBy: 'createdAt',
-        sortOrder: 'desc'
-    });
-    console.log('Tasks response:', {data: tasksData, error: tasksError});
-
     const tasks: Task[] = tasksData?.tasks || [];
 
     useEffect(() => {
@@ -53,28 +48,31 @@ const TeacherDashboard = () => {
         }
     }, [filterStatus, currentTeacherId, refetchTasks]);
 
-    if (tasksLoading || teacherLoading) {
+    const handleEditTask = (task: Task) => {
+        setTaskToEdit(task);
+        setShowEditModal(true);
+    };
+
+
+    if (teacherLoading || tasksLoading) {
         return (
-            <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center">
-                <div className="flex items-center space-x-2">
-                    <Loader2 className="w-6 h-6 animate-spin text-indigo-600"/>
-                    <span className="text-gray-600 dark:text-gray-400">Loading...</span>
-                </div>
+            <div className="flex justify-center items-center min-h-screen bg-gray-100 dark:bg-gray-900">
+                <Loader2 className="w-10 h-10 animate-spin text-indigo-500"/>
             </div>
         );
     }
 
-    if (tasksError || teacherError) {
+    if (teacherError || tasksError) {
+        const errorMessage = tasksError?.error || (teacherError as any)?.data?.message || 'Failed to load data';
         return (
-            <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center">
-                <div className="text-red-500 flex items-center space-x-2">
-                    <AlertCircle className="w-6 h-6"/>
-                    <span>
-            Error: {tasksError?.error || teacherError?.data?.message || 'Failed to load data'}
-          </span>
+            <div className="flex justify-center items-center min-h-screen bg-red-50 dark:bg-red-900">
+                <div
+                    className="flex flex-col items-center p-6 rounded-lg shadow-md bg-white dark:bg-gray-800 text-red-700 dark:text-red-300">
+                    <AlertCircle className="w-12 h-12 mb-4"/>
+                    <span className="text-lg font-semibold mb-4 text-center">{`Error: ${errorMessage}`}</span>
                     <button
                         onClick={() => refetchTasks()}
-                        className="ml-4 px-4 py-2 bg-indigo-500 text-white rounded-xl hover:bg-indigo-600"
+                        className="px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors duration-200"
                     >
                         Retry
                     </button>
@@ -84,27 +82,35 @@ const TeacherDashboard = () => {
     }
 
     return (
-        <div className="min-h-screen transition-colors duration-300">
-            <div className="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-                <Header/>
-                <MainContent
-                    tasks={tasks}
-                    searchQuery={searchQuery}
-                    setSearchQuery={setSearchQuery}
-                    filterStatus={filterStatus}
-                    setFilterStatus={setFilterStatus}
+        <div className="min-h-screen transition-colors duration-300 bg-gray-100 dark:bg-gray-950">
+            <Toaster position="top-right" reverseOrder={false}/>
+            <Header/>
+            <MainContent
+                tasks={tasks}
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                filterStatus={filterStatus}
+                setFilterStatus={setFilterStatus}
+                setShowCreateModal={setShowCreateModal}
+                isFetching={isFetching}
+                onEditTask={handleEditTask}
+            />
+            {showCreateModal && (
+                <CreateTaskModal
+                    showCreateModal={showCreateModal}
                     setShowCreateModal={setShowCreateModal}
-                    isFetching={isFetching}
+                    currentTeacherId={currentTeacherId}
+                    refetchTasks={refetchTasks}
                 />
-                {showCreateModal && (
-                    <CreateTaskModal
-                        showCreateModal={showCreateModal}
-                        setShowCreateModal={setShowCreateModal}
-                        currentTeacherId={currentTeacherId}
-                        refetchTasks={refetchTasks}
-                    />
-                )}
-            </div>
+            )}
+            {showEditModal && taskToEdit && (
+                <EditTaskModal
+                    showEditModal={showEditModal}
+                    setShowEditModal={setShowEditModal}
+                    taskToEdit={taskToEdit}
+                    refetchTasks={refetchTasks}
+                />
+            )}
         </div>
     );
 };

@@ -9,7 +9,7 @@ interface Attachment {
     originalName?: string;
 }
 
-interface Task {
+export interface Task {
     _id: string;
     title: string;
     description: string;
@@ -31,7 +31,7 @@ interface Task {
     dueDate: string;
 }
 
-interface CreateTaskInput {
+export interface CreateTaskInput {
     title: string;
     description: string;
     assignedGroups: string[];
@@ -61,6 +61,17 @@ interface GetTasksResponse {
     };
 }
 
+export interface UpdateTaskInput {
+    _id: string; // Task ID is required for update
+    title?: string;
+    description?: string;
+    assignedGroups?: string[];
+    deadline?: string;
+    allowLateSubmission?: boolean;
+    maxPoints?: string;
+    attachments?: Attachment[]; // All attachment types allowed for update
+}
+
 // Zod schemas from taskController for runtime validation
 const createTaskSchema = z.object({
     title: z.string().min(1, 'Title is required'),
@@ -78,6 +89,28 @@ const createTaskSchema = z.object({
         .array(
             z.object({
                 type: z.enum(['text', 'image', 'link']),
+                content: z.string(),
+                filename: z.string().optional(),
+                originalName: z.string().optional(),
+            })
+        )
+        .optional(),
+});
+
+const updateTaskSchema = z.object({
+    _id: z.string(), // Task ID is required
+    title: z.string().min(1, 'Title is required').optional(),
+    description: z.string().min(1, 'Description is required').optional(),
+    assignedGroups: z.array(z.string()).min(1, 'At least one group must be assigned').optional(),
+    deadline: z.string().datetime().optional(),
+    allowLateSubmission: z.boolean().optional(),
+    maxPoints: z.string().refine(val => !isNaN(parseInt(val, 10)) && parseInt(val, 10) >= 0, {
+        message: 'Points must be a valid non-negative number',
+    }).optional(),
+    attachments: z
+        .array(
+            z.object({
+                type: z.enum(['text', 'image', 'link', 'file']), // Allow all attachment types for update
                 content: z.string(),
                 filename: z.string().optional(),
                 originalName: z.string().optional(),
@@ -108,6 +141,7 @@ export const taskApi = createApi({
     reducerPath: 'taskApi',
     baseQuery: fetchBaseQuery({
         baseUrl: 'http://localhost:3001/tasks/',
+        credentials: "include",
         prepareHeaders: (headers) => {
             // Add auth token if needed
             const token = localStorage.getItem('token');
@@ -142,6 +176,18 @@ export const taskApi = createApi({
             providesTags: ['Tasks'],
         }),
 
+        updateTask: builder.mutation<Task, UpdateTaskInput>({
+            query: ({_id, ...patch}) => {
+                updateTaskSchema.parse({_id, ...patch});
+                return {
+                    url: `/${_id}`, // Correct endpoint for update (e.g., /api/tasks/:id)
+                    method: 'PUT', // Use PUT for updating a resource
+                    body: patch, // Send only the updated fields
+                };
+            },
+            invalidatesTags: (_result, _error, {_id}) => ['Tasks', {type: 'Task', id: _id}],
+        }),
+
         getTaskById: builder.query<{ task: Task }, string>({
             query: (id) => `/${id}`,
             providesTags: (_result, _error, id) => [{type: 'Task', id}],
@@ -168,6 +214,7 @@ export const taskApi = createApi({
 export const {
     useCreateTaskMutation,
     useGetAllTasksQuery,
+    useUpdateTaskMutation,
     useGetTaskByIdQuery,
     useDeleteTaskByIdMutation,
     useDeleteAllTasksMutation,
