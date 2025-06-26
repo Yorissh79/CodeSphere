@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import React, {useEffect, useState} from "react";
+import {Link} from "react-router-dom";
+import {ArrowUp} from "lucide-react";
 
-const StudentFooter = () => {
+const StudentFooter: React.FC = () => {
     const [year, setYear] = useState<number>(new Date().getFullYear());
 
     useEffect(() => {
@@ -9,32 +10,41 @@ const StudentFooter = () => {
     }, []);
 
     const scrollToTop = () => {
-        window.scrollTo({ top: 0, behavior: "smooth" });
+        window.scrollTo({top: 0, behavior: "smooth"});
     };
 
     return (
-        <footer className="w-full px-4 py-6 bg-gray-100 dark:bg-gray-900 text-gray-700 dark:text-gray-300 border-t border-gray-200 dark:border-gray-700">
-            <div className="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
-                <div className="text-sm">
-                    © {year} Codesphere Admin. All rights reserved.
+        <footer
+            className="w-full px-4 sm:px-6 py-8 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-t border-gray-200/50 dark:border-gray-800/50 text-gray-700 dark:text-gray-300 transition-colors duration-300">
+            <div className="max-w-7xl mx-auto flex flex-col items-center gap-6 sm:gap-4">
+                <div className="text-sm text-center">
+                    © {year} CodeSphere. All rights reserved.
                 </div>
-                <div className="flex items-center gap-4 text-sm">
-                    <Link to="/admin/dashboard" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition">
+                <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 text-sm">
+                    <Link
+                        to="/admin/dashboard"
+                        className="py-2 text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                    >
                         Dashboard
                     </Link>
-                    <Link to="/support" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition">
+                    <Link
+                        to="/support"
+                        className="py-2 text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                    >
                         Support
                     </Link>
-                    <Link to="/terms" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition">
-                        Terms
+                    <Link
+                        to="/terms"
+                        className="py-2 text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
                     </Link>
                 </div>
                 <button
                     onClick={scrollToTop}
-                    className="text-xs px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow transition"
-                    aria-label="Back to top"
+                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-sm text-sm font-medium"
+                    aria-label="Scroll to top"
                 >
-                    ↑ Top
+                    <ArrowUp className="w-4 h-4"/>
+                    Back to Top
                 </button>
             </div>
         </footer>

@@ -6,7 +6,6 @@ import Login from "../pages/login/Login.tsx";
 import NotFound from "../pages/notfound/NotFound.tsx";
 import Home from "../pages/student/home/Home.tsx";
 import Homet from "../pages/teacher/home/Home.tsx";
-import F from "../pages/first/home/F.tsx";
 import PP from "../pages/contactpages/pp/PP.tsx";
 import About from "../pages/contactpages/about/About.tsx";
 import Contact from "../pages/contactpages/contact/Contact.tsx";
@@ -34,6 +33,7 @@ import QuizT from "../pages/teacher/quiz/QuizT.tsx";
 import SearchPage from "../pages/search/SearchPage.tsx";
 import TeacherDashboard from "../pages/teacher/task/TeacherDashboard.tsx";
 import studentDashboard from "../pages/student/task/StudentDashboard.tsx";
+import HomePage from "../pages/first/HomePage.tsx";
 
 export const router = createBrowserRouter([
     {
@@ -42,7 +42,7 @@ export const router = createBrowserRouter([
         children: [
             {
                 path: "",
-                Component: F,
+                Component: HomePage,
             },
             {
                 path: "pp",
