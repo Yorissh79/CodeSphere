@@ -10,8 +10,7 @@ import {missesApi} from "../services/missesApi.ts";
 import {quizApi} from "../services/quizApi.ts";
 import {questionApi} from "../services/questionApi.ts";
 import {answerApi} from "../services/answerApi.ts";
-import {taskApi} from "../services/taskApi.ts";
-import {submissionApi} from "../services/submissionsApi.ts";
+import {baseApi} from "../services/baseApi.ts";
 import {commentApi} from "../services/commentsApi.ts";
 
 export const store = configureStore({
@@ -26,9 +25,8 @@ export const store = configureStore({
         [quizApi.reducerPath]: quizApi.reducer,
         [questionApi.reducerPath]: questionApi.reducer,
         [answerApi.reducerPath]: answerApi.reducer,
-        [taskApi.reducerPath]: taskApi.reducer,
-        [submissionApi.reducerPath]: submissionApi.reducer,
         [commentApi.reducerPath]: commentApi.reducer,
+        [baseApi.reducerPath]: baseApi.reducer,
     },
     middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware().concat(
@@ -42,9 +40,8 @@ export const store = configureStore({
             quizApi.middleware,
             questionApi.middleware,
             answerApi.middleware,
-            taskApi.middleware,
-            submissionApi.middleware,
             commentApi.middleware,
+            baseApi.middleware,
         ),
 });
 

@@ -9,18 +9,20 @@ import {useState} from 'react';
 // Corrected import path
 import {useDeleteTaskByIdMutation} from '../../../../services/taskApi';
 import {toast} from 'react-hot-toast'; // Assuming you use react-hot-toast or similar for notifications
+import ViewSubmissionsModal from './ViewSubmissionsModal'; // Import the new modal component
 
 interface TaskCardProps {
     task: Task;
     onDelete?: (taskId: string) => void; // Keep this prop for consistency or remove if handled internally
     onEdit?: (task: Task) => void;
-    onView?: (task: Task) => void;
+    onView?: (task: Task) => void; // Added onView prop
     // refetchTasks: () => void; // Removed as RTK Query's invalidation usually handles this
 }
 
-const TaskCard = ({task, onEdit, onView}: TaskCardProps) => {
+const TaskCard = ({task, onEdit}: TaskCardProps) => {
     const [isDeleting, setIsDeleting] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [showSubmissionsModal, setShowSubmissionsModal] = useState(false); // State for submissions modal
     const [deleteTaskById] = useDeleteTaskByIdMutation(); // Get the mutation trigger
 
     // Fetch all groups to map IDs to names
@@ -65,6 +67,10 @@ const TaskCard = ({task, onEdit, onView}: TaskCardProps) => {
 
     const handleDelete = () => {
         setShowDeleteConfirm(true);
+    };
+
+    const handleViewSubmissions = () => {
+        setShowSubmissionsModal(true);
     };
 
     return (
@@ -114,7 +120,7 @@ const TaskCard = ({task, onEdit, onView}: TaskCardProps) => {
                         <motion.button
                             whileHover={{scale: 1.1}}
                             whileTap={{scale: 0.9}}
-                            onClick={() => onView?.(task)}
+                            onClick={handleViewSubmissions} // Call the new handler
                             className="p-2 text-gray-500 dark:text-gray-400 hover:text-indigo-500 transition-colors duration-200"
                             title="View submissions"
                         >
@@ -207,6 +213,13 @@ const TaskCard = ({task, onEdit, onView}: TaskCardProps) => {
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {/* View Submissions Modal */}
+            <ViewSubmissionsModal
+                task={task}
+                showModal={showSubmissionsModal}
+                setShowModal={setShowSubmissionsModal}
+            />
         </>
     );
 };

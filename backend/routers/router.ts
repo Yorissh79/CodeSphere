@@ -77,7 +77,7 @@ import {
     getAllTasks,
     getTaskById,
     deleteAllTasks,
-    deleteTaskById, updateTaskById
+    deleteTaskById, updateTaskById, getAllStudentTasks
 } from "../controllers/taskController";
 
 import {createComment, deleteComment, getCommentsByAuthor, getCommentsBySubmission, getCommentStats, updateComment} from "../controllers/commentController"
@@ -156,21 +156,22 @@ router.post("/question/create", validTeacherOrAdmin, createQuestion);
 router.get("/question/quiz/:quizId", getQuestionsByQuiz);
 router.delete("/question/:id", validTeacherOrAdmin, deleteQuestion);
 
-router.post("/tasks/create", validTeacherOrAdmin, upload.array("files", 10), createTask as any);
-router.get("/tasks/", getAllTasks);
-router.get("/tasks/:id", studentValid, getTaskById);
-router.delete("/tasks/delete", validTeacherOrAdmin, deleteAllTasks);
-router.delete("/tasks/delete/:id", validTeacherOrAdmin, deleteTaskById);
-router.put("/tasks/update/:taskId", validTeacherOrAdmin, updateTaskById as any);
+router.post("/apis/tasks/create", validTeacherOrAdmin, upload.array("files", 10), createTask as any);
+router.get("/apis/tasks/", getAllTasks);
+router.get("/apis/tasks/student", studentValid, getAllStudentTasks as any);
+router.get("/apis/tasks/:id", studentValid, getTaskById);
+router.delete("/apis/tasks/delete", validTeacherOrAdmin, deleteAllTasks);
+router.delete("/apis/tasks/delete/:id", validTeacherOrAdmin, deleteTaskById);
+router.put("/apis/tasks/update/:taskId", validTeacherOrAdmin, updateTaskById as any);
 
 // Submission Routes
-router.post("/submissions/create", studentValid, createSubmission as any);
-router.get("/submissions", getSubmissions as any);
-router.get("/submissions/:id", getSubmissionById as any);
-router.put("/submissions/:id", updateSubmission as any);
-router.delete("/submissions/:id", deleteSubmission as any);
-router.get("/submissions/task/:taskId", getSubmissionsByTask as any);
-router.get("/submissions/stats", validTeacherOrAdmin, getSubmissionStats as any);
+router.post("/apis/submissions/create", studentValid, createSubmission as any);
+router.get("/apis/submissions", getSubmissions as any);
+router.get("/apis/submissions/:id", getSubmissionById as any);
+router.put("/apis/submissions/:id", updateSubmission as any);
+router.delete("/apis/submissions/:id", deleteSubmission as any);
+router.get("/apis/submissions/task/:taskId", getSubmissionsByTask as any);
+router.get("/apis/submissions/stats", validTeacherOrAdmin, getSubmissionStats as any);
 
 // Comment Routes
 router.post("/comments/:submissionId", createComment as any);

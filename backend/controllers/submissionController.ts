@@ -10,13 +10,26 @@ interface AuthenticatedRequest extends Omit<Request, 'user'> {
     };
 }
 
+// Updated schema to match frontend data structure
 const createSubmissionSchema = z.object({
     taskId: z.string(),
-    githubUrl: z.string().url(),
+    comments: z.string().max(1000, 'Comments cannot exceed 1000 characters').optional(),
+    attachments: z.array(z.object({
+        type: z.enum(['text', 'image', 'link']),
+        content: z.string(),
+        filename: z.string().optional(),
+        originalName: z.string().optional(),
+    })).optional(),
 });
 
 const updateSubmissionSchema = z.object({
-    githubUrl: z.string().url().optional(),
+    comments: z.string().max(1000, 'Comments cannot exceed 1000 characters').optional(),
+    attachments: z.array(z.object({
+        type: z.enum(['text', 'image', 'link']),
+        content: z.string(),
+        filename: z.string().optional(),
+        originalName: z.string().optional(),
+    })).optional(),
     points: z.number().optional(),
     feedback: z.string().optional(),
     status: z.enum(['submitted', 'graded', 'returned']).optional(),
@@ -33,7 +46,7 @@ export const createSubmission = async (req: AuthenticatedRequest, res: Response)
         return res.status(400).json({ error: result.error });
     }
 
-    const { taskId, githubUrl } = result.data;
+    const { taskId, comments, attachments } = result.data;
     const studentId = req.user?.id;
 
     if (!studentId) {
@@ -41,21 +54,40 @@ export const createSubmission = async (req: AuthenticatedRequest, res: Response)
     }
 
     try {
+        // Check if submission already exists
         const existingSubmission = await submissionModel.findOne({ taskId, studentId });
         if (existingSubmission) {
             return res.status(409).json({ error: 'Submission already exists for this task' });
         }
 
+        // Extract GitHub URL from attachments if provided
+        const githubAttachment = attachments?.find(att => att.type === 'link' && att.originalName === 'GitHub Repository');
+        const githubUrl = githubAttachment?.content;
+
         // TODO: Add logic to check if submission is late based on task deadline
         const isLate = false;
 
-        const submission = await submissionModel.create({
+        const submissionData: any = {
             taskId,
             studentId,
-            githubUrl,
             isLate,
             status: 'submitted',
-        });
+        };
+
+        // Add optional fields if they exist
+        if (comments) {
+            submissionData.comments = comments;
+        }
+
+        if (attachments && attachments.length > 0) {
+            submissionData.attachments = attachments;
+        }
+
+        if (githubUrl) {
+            submissionData.githubUrl = githubUrl;
+        }
+
+        const submission = await submissionModel.create(submissionData);
 
         const populatedSubmission = await submission.populate(['taskId', 'studentId']);
 
@@ -165,7 +197,22 @@ export const updateSubmission = async (req: AuthenticatedRequest, res: Response)
             if (submission && submission.status === 'graded') {
                 return res.status(403).json({ error: 'Cannot update graded submission' });
             }
-            updateData = { githubUrl: updateData.githubUrl };
+
+            // Students can only update comments and attachments
+            const allowedUpdates: any = {};
+            if (updateData.comments !== undefined) {
+                allowedUpdates.comments = updateData.comments;
+            }
+            if (updateData.attachments !== undefined) {
+                allowedUpdates.attachments = updateData.attachments;
+
+                // Extract GitHub URL from attachments if provided
+                const githubAttachment = updateData.attachments.find(att => att.type === 'link' && att.originalName === 'GitHub Repository');
+                if (githubAttachment) {
+                    allowedUpdates.githubUrl = githubAttachment.content;
+                }
+            }
+            updateData = allowedUpdates;
         } else if (userRole !== 'instructor' && userRole !== 'admin') {
             return res.status(403).json({ error: 'Insufficient permissions' });
         }

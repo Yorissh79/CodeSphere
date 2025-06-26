@@ -33,6 +33,7 @@ import QuizAnalysisPage from "../pages/teacher/teacherquizchecker/QuizAnalysisPa
 import QuizT from "../pages/teacher/quiz/QuizT.tsx";
 import SearchPage from "../pages/search/SearchPage.tsx";
 import TeacherDashboard from "../pages/teacher/task/TeacherDashboard.tsx";
+import studentDashboard from "../pages/student/task/StudentDashboard.tsx";
 
 export const router = createBrowserRouter([
     {
@@ -102,6 +103,10 @@ export const router = createBrowserRouter([
                         path: "quiz",
                         Component: QuizS
                     },
+                    {
+                        path: "task",
+                        Component: studentDashboard
+                    }
                 ]
             },
             {

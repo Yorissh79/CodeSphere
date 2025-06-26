@@ -1,12 +1,33 @@
-import {createApi, fetchBaseQuery} from '@reduxjs/toolkit/query/react';
 import {z} from 'zod';
+import {baseApi} from './baseApi';
 
 // Define interfaces based on taskController schemas
-interface Attachment {
+export interface Attachment {
     type: 'text' | 'image' | 'link';
     content: string;
     filename?: string;
     originalName?: string;
+}
+
+export interface Teacher {
+    _id: string;
+    name: string;
+    surname: string;
+    email: string;
+}
+
+export interface StudentTask {
+    _id: string;
+    title: string;
+    description: string;
+    deadline: string; // ISO date string
+    maxPoints: string;
+    assignedGroups: string[];
+    teacherId: Teacher; // Populated teacher object
+    allowLateSubmission: boolean;
+    attachments?: Attachment[];
+    submissionStatus?: 'submitted' | 'not_submitted' | 'late_submitted'; // This will be derived on the frontend or added by a custom backend endpoint
+    submissionId?: string; // ID of the submission if it exists
 }
 
 export interface Task {
@@ -70,6 +91,24 @@ export interface UpdateTaskInput {
     allowLateSubmission?: boolean;
     maxPoints?: string;
     attachments?: Attachment[]; // All attachment types allowed for update
+}
+
+export interface GetAllStudentTasksQueryParams {
+    studentId: string;
+    groupIds: string[];
+    status?: 'all' | 'active' | 'expired';
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+}
+
+export interface GetAllStudentTasksResponse {
+    tasks: StudentTask[];
+    pagination: {
+        page: number;
+        limit: number;
+        total: number;
+        pages: number;
+    };
 }
 
 // Zod schemas from taskController for runtime validation
@@ -137,76 +176,92 @@ const getTasksQuerySchema = z.object({
     sortOrder: z.enum(['asc', 'desc']).default('desc'),
 });
 
-export const taskApi = createApi({
-    reducerPath: 'taskApi',
-    baseQuery: fetchBaseQuery({
-        baseUrl: 'http://localhost:3001/tasks/',
-        credentials: "include",
-        prepareHeaders: (headers) => {
-            // Add auth token if needed
-            const token = localStorage.getItem('token');
-            if (token) {
-                headers.set('Authorization', `Bearer ${token}`);
-            }
-            return headers;
-        },
-    }),
-    tagTypes: ['Tasks', 'Task'],
+// Inject endpoints into the baseApi
+export const taskApi = baseApi.injectEndpoints({
     endpoints: (builder) => ({
         createTask: builder.mutation<{ message: string; task: Task }, CreateTaskInput>({
             query: (taskData) => {
                 const validatedData = createTaskSchema.parse(taskData);
                 return {
-                    url: 'create',
+                    url: 'tasks/create',
                     method: 'POST',
                     body: validatedData,
                 };
             },
-            invalidatesTags: ['Tasks'],
+            invalidatesTags: ['Task'],
         }),
 
         getAllTasks: builder.query<GetTasksResponse, GetTasksQuery>({
             query: (queryParams) => {
                 const validatedParams = getTasksQuerySchema.parse(queryParams);
                 return {
-                    url: '/',
+                    url: 'tasks/',
                     params: validatedParams,
                 };
             },
-            providesTags: ['Tasks'],
+            providesTags: ['Task'],
         }),
 
         updateTask: builder.mutation<Task, UpdateTaskInput>({
             query: ({_id, ...patch}) => {
                 updateTaskSchema.parse({_id, ...patch});
                 return {
-                    url: `/${_id}`, // Correct endpoint for update (e.g., /api/tasks/:id)
+                    url: `tasks/${_id}`, // Correct endpoint for update (e.g., /api/tasks/:id)
                     method: 'PUT', // Use PUT for updating a resource
                     body: patch, // Send only the updated fields
                 };
             },
-            invalidatesTags: (_result, _error, {_id}) => ['Tasks', {type: 'Task', id: _id}],
+            invalidatesTags: (_result, _error, {_id}) => ['Task', {type: 'Task', id: _id}],
         }),
 
         getTaskById: builder.query<{ task: Task }, string>({
-            query: (id) => `/${id}`,
+            query: (id) => `tasks/${id}`,
             providesTags: (_result, _error, id) => [{type: 'Task', id}],
         }),
 
         deleteTaskById: builder.mutation<{ message: string }, string>({
             query: (id) => ({
-                url: `delete/${id}`,
+                url: `tasks/delete/${id}`,
                 method: 'DELETE',
             }),
-            invalidatesTags: (_result, _error, id) => ['Tasks', {type: 'Task', id}],
+            invalidatesTags: (_result, _error, id) => ['Task', {type: 'Task', id}],
         }),
 
         deleteAllTasks: builder.mutation<{ message: string }, void>({
             query: () => ({
-                url: 'delete',
+                url: 'tasks/delete',
                 method: 'DELETE',
             }),
-            invalidatesTags: ['Tasks'],
+            invalidatesTags: ['Task'],
+        }),
+
+        getAllStudentTasks: builder.query<GetAllStudentTasksResponse, GetAllStudentTasksQueryParams>({
+            query: (params) => {
+                const queryParams = new URLSearchParams();
+
+                // Handle groupIds - convert string to array if needed
+                const groupIds = Array.isArray(params.groupIds) ? params.groupIds : [params.groupIds];
+                groupIds.forEach(id => {
+                    if (id) queryParams.append('groupIds', id);
+                });
+
+                // Add optional parameters
+                if (params.status) {
+                    queryParams.append('status', params.status);
+                }
+                if (params.sortBy) {
+                    queryParams.append('sortBy', params.sortBy);
+                }
+                if (params.sortOrder) {
+                    queryParams.append('sortOrder', params.sortOrder);
+                }
+
+                return `/tasks/student?${queryParams.toString()}`;
+            },
+            providesTags: (result) =>
+                result
+                    ? [...result.tasks.map(({_id}) => ({type: 'Task' as const, id: _id})), 'Task']
+                    : ['Task'],
         }),
     }),
 });
@@ -218,4 +273,5 @@ export const {
     useGetTaskByIdQuery,
     useDeleteTaskByIdMutation,
     useDeleteAllTasksMutation,
+    useGetAllStudentTasksQuery,
 } = taskApi;

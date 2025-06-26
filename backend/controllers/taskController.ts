@@ -398,3 +398,128 @@ export const deleteTaskById = async (req: Request, res: Response, next: NextFunc
         next(new Error('Failed to delete task'));
     }
 };
+
+const getStudentTasksQuerySchema = z.object({
+    // studentId is NOT expected as a query parameter from the frontend here.
+    // It will be derived from req.user.id on the backend.
+    groupIds: z.array(z.string()).or(z.string()).transform(val =>
+        Array.isArray(val) ? val : [val]
+    ),
+    status: z.enum(['active', 'expired', 'all']).optional(),
+    sortBy: z.enum(['createdAt', 'deadline', 'title']).default('deadline'),
+    sortOrder: z.enum(['asc', 'desc']).default('asc'),
+});
+
+// Add this new controller function to your existing task controller
+export const getAllStudentTasks = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        // SECURELY get studentId from the authenticated user object.
+        // This relies on your authentication middleware setting req.user.id.
+        const studentId = req.user?._id;
+
+        if (!studentId) {
+            // This case should ideally be handled by earlier authentication middleware
+            // that prevents unauthenticated access or redirects.
+            res.status(401).json({ error: 'Authentication required: Student ID is not available.' });
+            return;
+        }
+
+        // Handle groupIds from query parameters
+        let rawGroupIds = req.query.groupIds;
+        if (typeof rawGroupIds === 'string') {
+            rawGroupIds = [rawGroupIds];
+        } else if (!rawGroupIds) {
+            rawGroupIds = [];
+        }
+
+        // Validate query parameters using Zod (excluding studentId)
+        const queryResult = getStudentTasksQuerySchema.safeParse({
+            ...req.query,
+            groupIds: rawGroupIds
+        });
+
+        if (!queryResult.success) {
+            res.status(400).json({ error: queryResult.error.flatten() });
+            return;
+        }
+
+        const { groupIds, status, sortBy, sortOrder } = queryResult.data;
+
+        // Validate studentId from the authenticated user (it must be a valid MongoDB ObjectId)
+        if (!mongoose.isValidObjectId(studentId)) {
+            res.status(400).json({ error: 'Invalid student ID format provided by authentication system.' });
+            return;
+        }
+
+        // Validate groupIds - allow empty array if no group provided
+        const validGroupIds = groupIds.filter(id => id && mongoose.isValidObjectId(id));
+
+        // If no valid groupIds are provided AND some groupIds were attempted but invalid,
+        // it means there was a format error. If rawGroupIds was empty, it's just no groups.
+        if (validGroupIds.length === 0 && groupIds.length > 0) {
+            res.status(400).json({ error: 'Invalid group ID format provided.' });
+            return;
+        }
+
+        // If no groups are provided, it usually means no tasks can be assigned.
+        // Return an empty result in this case.
+        if (validGroupIds.length === 0) {
+            res.json({
+                tasks: [],
+                totalTasks: 0,
+            });
+            return;
+        }
+
+        const filter: any = {
+            assignedGroups: { $in: validGroupIds }
+        };
+
+        const now = new Date(); // Use new Date() for current time comparison
+        if (status === 'active') {
+            filter.deadline = { $gte: now.toISOString() }; // Ensure ISO string for comparison with dates in DB
+        } else if (status === 'expired') {
+            filter.deadline = { $lt: now.toISOString() };
+        }
+        // If status is 'all' or undefined, don't add deadline filter
+
+        const sort: any = { [sortBy]: sortOrder === 'asc' ? 1 : -1 };
+
+        // Cast to ITask[] for better type inference after populate/lean
+        const tasks = await taskModel
+            .find(filter)
+            .sort(sort)
+            .populate('teacherId', 'name surname email') // Populate teacher details
+            .lean() as ITask[];
+
+        // Check if student has submitted each task
+        const tasksWithSubmissionStatus = await Promise.all(
+            tasks.map(async (task) => {
+                // Ensure taskId and studentId are Mongoose ObjectIds for the query
+                const submission = await mongoose.model('Submission').findOne({
+                    taskId: new mongoose.Types.ObjectId(task._id),
+                    studentId: new mongoose.Types.ObjectId(studentId) // Use the secure studentId here
+                });
+
+                return {
+                    ...task,
+                    hasSubmitted: !!submission,
+                    submissionId: submission?._id || null,
+                    submissionStatus: submission?.status || null,
+                    // Convert deadline to a consistent format if needed for frontend display
+                    dueDate: task.deadline, // Keep as is if it's already suitable
+                    isExpired: new Date(task.deadline) < now, // Compare with the consistent 'now'
+                    canSubmit: task.allowLateSubmission || new Date(task.deadline) >= now // Compare with 'now'
+                };
+            })
+        );
+
+        res.json({
+            tasks: tasksWithSubmissionStatus,
+            totalTasks: tasksWithSubmissionStatus.length,
+        });
+    } catch (error) {
+        console.error('Get student tasks error:', error);
+        next(new Error('Failed to fetch student tasks')); // Pass to error handling middleware
+    }
+};

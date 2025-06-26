@@ -1,99 +1,93 @@
-import {createApi, fetchBaseQuery} from '@reduxjs/toolkit/query/react';
-import type {
-    Submission,
-    CreateSubmissionRequest,
-    UpdateSubmissionRequest,
-    GradeSubmissionRequest,
-    SubmissionStats
-} from '../types/api';
+// api/submissionApi.ts
+import {baseApi} from './baseApi';
+import type {Attachment, StudentTask} from './taskApi'; // Import types from taskApi
 
-export const submissionApi = createApi({
-    reducerPath: 'http://localhost:3001/submissionApi',
-    baseQuery: fetchBaseQuery({
-        baseUrl: '/api',
-        credentials: 'include',
-        prepareHeaders: (headers, {getState}) => {
-            const token = (getState() as any).auth?.token;
-            if (token) {
-                headers.set('authorization', `Bearer ${token}`);
-            }
-            return headers;
-        },
-    }),
-    tagTypes: ['Submission', 'SubmissionStats'],
+export interface SubmissionInput {
+    taskId: string;
+    // studentId: string;
+    comments?: string;
+    // Attachments will be sent as an array of objects
+    attachments?: Attachment[];
+}
+
+export interface Submission {
+    _id: string;
+    taskId: string | StudentTask; // Can be ObjectId or populated Task object
+    studentId: string; // Can be ObjectId or populated User object
+    comments?: string;
+    attachments: Attachment[]; // Array of attachment objects
+    submittedAt: string; // ISO Date String
+    isLate: boolean;
+    points?: number;
+    feedback?: string;
+    status: 'submitted' | 'graded' | 'returned';
+}
+
+interface CreateSubmissionResponse {
+    message: string;
+    submission: Submission;
+}
+
+interface GetSubmissionsResponse {
+    message: string;
+    submissions: Submission[];
+}
+
+interface GetSubmissionByIdResponse {
+    message: string;
+    submission: Submission;
+}
+
+// Extend the base API with submission-related endpoints
+export const submissionApi = baseApi.injectEndpoints({
     endpoints: (builder) => ({
-        // Create submission (Student only)
-        createSubmission: builder.mutation<Submission, CreateSubmissionRequest>({
-            query: (data) => ({
+        // Create a new submission
+        createSubmission: builder.mutation<CreateSubmissionResponse, SubmissionInput>({
+            query: (submissionData) => ({
                 url: '/submissions/create',
                 method: 'POST',
-                body: data,
+                body: submissionData,
             }),
-            invalidatesTags: ['Submission'],
+            // Invalidate the 'Task' tag to refetch tasks and update their submission status
+            invalidatesTags: ['Task'],
         }),
 
-        // Get all submissions
-        getSubmissions: builder.query<Submission[], void>({
-            query: () => '/submissions',
-            providesTags: ['Submission'],
+        // Get all submissions (for a student or by task/student ID for instructors/admins)
+        // This endpoint can be used with different query parameters for filtering
+        getSubmissions: builder.query<GetSubmissionsResponse, {
+            taskId?: string;
+            studentId?: string;
+            status?: string
+        }>({
+            query: (params) => {
+                const queryString = Object.entries(params)
+                    .filter(([, value]) => value !== undefined && value !== '')
+                    .map(([key, value]) => `${key}=${value}`)
+                    .join('&');
+                return `/submissions${queryString ? `?${queryString}` : ''}`;
+            },
+            providesTags: (result, _error, {taskId, studentId}) =>
+                result
+                    ? [
+                        ...result.submissions.map(({_id}) => ({type: 'Submission' as const, id: _id})),
+                        {type: 'Submission', id: 'LIST'}, // Tag for the whole list
+                        ...(taskId ? [{type: 'Submission' as const, id: `TASK-${taskId}`}] : []),
+                        ...(studentId ? [{type: 'Submission' as const, id: `STUDENT-${studentId}`}] : []),
+                    ]
+                    : [{type: 'Submission', id: 'LIST'}],
         }),
 
-        // Get submission by ID
-        getSubmissionById: builder.query<Submission, string>({
+        // Get a single submission by its ID
+        getSubmissionById: builder.query<GetSubmissionByIdResponse, string>({
             query: (id) => `/submissions/${id}`,
             providesTags: (_result, _error, id) => [{type: 'Submission', id}],
-        }),
-
-        // Update submission
-        updateSubmission: builder.mutation<Submission, { id: string } & UpdateSubmissionRequest>({
-            query: ({id, ...data}) => ({
-                url: `/submissions/${id}`,
-                method: 'PUT',
-                body: data,
-            }),
-            invalidatesTags: (_result, _error, {id}) => [{type: 'Submission', id}],
-        }),
-
-        // Delete submission
-        deleteSubmission: builder.mutation<void, string>({
-            query: (id) => ({
-                url: `/submissions/${id}`,
-                method: 'DELETE',
-            }),
-            invalidatesTags: (_result, _error, id) => [{type: 'Submission', id}],
-        }),
-
-        // Get submissions by task
-        getSubmissionsByTask: builder.query<Submission[], string>({
-            query: (taskId) => `/submissions/task/${taskId}`,
-            providesTags: ['Submission'],
-        }),
-
-        // Grade submission (Teacher/Admin only)
-        gradeSubmission: builder.mutation<void, { id: string } & GradeSubmissionRequest>({
-            query: ({id, ...data}) => ({
-                url: `/submissions/grade/${id}`,
-                method: 'POST',
-                body: data,
-            }),
-            invalidatesTags: (_result, _error, {id}) => [{type: 'Submission', id}],
-        }),
-
-        // Get submission stats (Teacher/Admin only)
-        getSubmissionStats: builder.query<SubmissionStats, void>({
-            query: () => '/submissions/stats',
-            providesTags: ['SubmissionStats'],
         }),
     }),
 });
 
+// Export hooks for usage in components
 export const {
     useCreateSubmissionMutation,
     useGetSubmissionsQuery,
     useGetSubmissionByIdQuery,
-    useUpdateSubmissionMutation,
-    useDeleteSubmissionMutation,
-    useGetSubmissionsByTaskQuery,
-    useGradeSubmissionMutation,
-    useGetSubmissionStatsQuery,
 } = submissionApi;
