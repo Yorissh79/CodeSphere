@@ -83,13 +83,13 @@ const TeacherHeader = () => {
         <motion.header
             initial={{y: -100}}
             animate={{y: 0}}
-            className={`fixed top-0 left-0 right-0 z-[999] transition-all duration-300 will-change-transform ${
+            className={`top-0 left-0 right-0 z-[999] transition-all duration-300 will-change-transform ${
                 isScrolled
                     ? 'bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl shadow-xl border-b border-gray-200/30 dark:border-gray-700/30'
                     : 'bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm shadow-lg'
             }`}
             style={{
-                position: 'fixed',
+                // position: 'fixed',
                 top: 0,
                 left: 0,
                 right: 0,

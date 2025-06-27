@@ -34,6 +34,7 @@ import SearchPage from "../pages/search/SearchPage.tsx";
 import TeacherDashboard from "../pages/teacher/task/TeacherDashboard.tsx";
 import studentDashboard from "../pages/student/task/StudentDashboard.tsx";
 import HomePage from "../pages/first/HomePage.tsx";
+import BrowserCodeEditor from "../pages/codeeditor/CodeEditor.tsx";
 
 export const router = createBrowserRouter([
     {
@@ -106,6 +107,10 @@ export const router = createBrowserRouter([
                     {
                         path: "task",
                         Component: studentDashboard
+                    },
+                    {
+                        path: "code-editor",
+                        Component: BrowserCodeEditor
                     }
                 ]
             },
@@ -132,6 +137,10 @@ export const router = createBrowserRouter([
                     {
                         path: "task",
                         Component: TeacherDashboard
+                    },
+                    {
+                        path: "code-editor",
+                        Component: BrowserCodeEditor
                     }
                 ]
             },

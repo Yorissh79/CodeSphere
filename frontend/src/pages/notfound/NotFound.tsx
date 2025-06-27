@@ -1,11 +1,16 @@
 import React, {useState} from 'react';
-import {Link} from 'react-router-dom';
+import {Link, useNavigate} from 'react-router-dom';
 
 const NotFound: React.FC = () => {
     const [isDarkMode, setIsDarkMode] = useState(false);
+    const navigate = useNavigate();
 
     const toggleTheme = () => {
         setIsDarkMode(!isDarkMode);
+    };
+
+    const goBack = () => {
+        navigate(-1);
     };
 
     return (
@@ -46,7 +51,7 @@ const NotFound: React.FC = () => {
                     It looks like this page took a detour to outer space. Let’s get you back on track!
                 </p>
 
-                {/* CTA Buttonssection */}
+                {/* CTA Buttons Section */}
                 <div className="flex flex-col sm:flex-row justify-center gap-4">
                     <Link
                         to="/"
@@ -60,6 +65,12 @@ const NotFound: React.FC = () => {
                     >
                         Search Site
                     </Link>
+                    <button
+                        onClick={goBack}
+                        className="bg-transparent border-2 border-indigo-600 text-indigo-600 px-6 py-3 rounded-lg font-medium hover:bg-indigo-600 hover:text-white hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                    >
+                        Go Back
+                    </button>
                 </div>
             </main>
 
