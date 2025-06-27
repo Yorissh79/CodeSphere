@@ -3,7 +3,7 @@ import {z} from 'zod';
 import {toast} from 'react-hot-toast';
 import {useUpdateTaskMutation, type Task, type UpdateTaskInput} from '../../../../services/taskApi'; // Corrected path
 import {useGetAllGroupsQuery} from '../../../../services/groupApi'; // Corrected path
-import {Loader2, X, AlertCircle, Upload} from 'lucide-react';
+import {Loader2, X, AlertCircle, Upload, Link as LinkIcon} from 'lucide-react';
 import type {FetchBaseQueryError} from "@reduxjs/toolkit/query"; // Import Upload icon
 import type {SerializedError} from '@reduxjs/toolkit';
 
@@ -27,6 +27,8 @@ const formUpdateTaskSchema = z.object({
     allowLateSubmission: z.boolean().optional(),
     // Max points must be a non-negative number
     maxPoints: z.number().min(0, 'Points must be a non-negative number').optional(),
+    // GitHub link validation
+    githubLink: z.string().url('Invalid GitHub URL').optional().or(z.literal('')),
     // Attachments are optional and match the structure defined in taskApi.ts
     attachments: z
         .array(
@@ -48,7 +50,7 @@ const EditTaskModal = ({
                            refetchTasks, // Keeping it here, though often not needed with RTK Query's invalidation
                        }: EditTaskModalProps) => {
     // State to manage form data, initialized with the taskToEdit's values
-    const [formData, setFormData] = useState<UpdateTaskInput>({
+    const [formData, setFormData] = useState<UpdateTaskInput & { githubLink?: string }>({
         _id: taskToEdit._id,
         title: taskToEdit.title,
         description: taskToEdit.description,
@@ -59,6 +61,7 @@ const EditTaskModal = ({
         // Keep maxPoints as number (matching the fixed Task interface)
         maxPoints: taskToEdit.maxPoints,
         attachments: taskToEdit.attachments, // Include existing attachments
+        githubLink: (taskToEdit as any).githubLink || '', // Add GitHub link from task data
     });
 
     // State for managing new files to upload
@@ -77,6 +80,17 @@ const EditTaskModal = ({
     // Fetch all groups to populate the assigned groups dropdown
     const {data: groupsData, isLoading: groupsLoading, error: groupsError} = useGetAllGroupsQuery({});
 
+    // Handle Escape key press to close modal
+    useEffect(() => {
+        const handleEscapeKey = (event: KeyboardEvent) => {
+            if (event.key === 'Escape' && showEditModal) {
+                setShowEditModal(false);
+            }
+        };
+
+        document.addEventListener('keydown', handleEscapeKey);
+        return () => document.removeEventListener('keydown', handleEscapeKey);
+    }, [showEditModal, setShowEditModal]);
 
     // Effect to update form data and selected files when a different task is selected for editing
     useEffect(() => {
@@ -93,6 +107,7 @@ const EditTaskModal = ({
                 // because new uploads are managed separately in `selectedFiles`.
                 // Existing attachments are kept in `formData.attachments` and new ones will be merged.
                 attachments: taskToEdit.attachments,
+                githubLink: (taskToEdit as any).githubLink || '', // Add GitHub link from task data
             });
             setSelectedFiles([]); // Clear new files when a new task is loaded
             setFormErrors([]); // Clear any previous errors when taskToEdit changes
@@ -214,7 +229,7 @@ const EditTaskModal = ({
             const allAttachments = [...(formData.attachments || []), ...newAttachments];
 
             // Create the task data object that matches UpdateTaskInput interface
-            const taskData: UpdateTaskInput = {
+            const taskData: UpdateTaskInput & { githubLink?: string } = {
                 ...formData,
                 attachments: allAttachments.length > 0 ? allAttachments : undefined, // Only include if there are attachments
             };
@@ -333,6 +348,33 @@ const EditTaskModal = ({
                                 )}
                             </div>
 
+                            {/* GitHub Link Input */}
+                            <div>
+                                <label htmlFor="githubLink"
+                                       className="block text-sm font-medium text-gray-300 mb-2">
+                                    GitHub Repository Link
+                                </label>
+                                <div className="relative">
+                                    <LinkIcon
+                                        className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"/>
+                                    <input
+                                        type="url"
+                                        name="githubLink"
+                                        id="githubLink"
+                                        value={formData.githubLink || ''}
+                                        onChange={handleChange}
+                                        className="w-full pl-10 pr-4 py-3 bg-gray-800/50 border border-gray-700/50 rounded-xl text-gray-100 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                        placeholder="https://github.com/username/repository"
+                                    />
+                                </div>
+                                {formErrors.find(err => err.path[0] === 'githubLink') && (
+                                    <p className="text-rose-500 text-xs mt-1">
+                                        {formErrors.find(err => err.path[0] === 'githubLink')?.message}
+                                    </p>
+                                )}
+                                <p className="text-xs text-gray-500 mt-1">Optional: Link to the project repository</p>
+                            </div>
+
                             {/* Assigned Groups Select */}
                             <div>
                                 <label htmlFor="assignedGroups"
@@ -372,48 +414,51 @@ const EditTaskModal = ({
                                 )}
                             </div>
 
-                            {/* Deadline Input */}
-                            <div>
-                                <label htmlFor="deadline"
-                                       className="block text-sm font-medium text-gray-300 mb-2">
-                                    Deadline
-                                </label>
-                                <input
-                                    type="datetime-local"
-                                    name="deadline"
-                                    id="deadline"
-                                    value={formData.deadline || ''}
-                                    onChange={handleChange}
-                                    className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700/50 rounded-xl text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                                />
-                                {formErrors.find(err => err.path[0] === 'deadline') && (
-                                    <p className="text-rose-500 text-xs mt-1">
-                                        {formErrors.find(err => err.path[0] === 'deadline')?.message}
-                                    </p>
-                                )}
-                            </div>
+                            {/* Deadline and Max Points in a grid */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* Deadline Input */}
+                                <div>
+                                    <label htmlFor="deadline"
+                                           className="block text-sm font-medium text-gray-300 mb-2">
+                                        Deadline
+                                    </label>
+                                    <input
+                                        type="datetime-local"
+                                        name="deadline"
+                                        id="deadline"
+                                        value={formData.deadline || ''}
+                                        onChange={handleChange}
+                                        className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700/50 rounded-xl text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                    />
+                                    {formErrors.find(err => err.path[0] === 'deadline') && (
+                                        <p className="text-rose-500 text-xs mt-1">
+                                            {formErrors.find(err => err.path[0] === 'deadline')?.message}
+                                        </p>
+                                    )}
+                                </div>
 
-                            {/* Max Points Input */}
-                            <div>
-                                <label htmlFor="maxPoints"
-                                       className="block text-sm font-medium text-gray-300 mb-2">
-                                    Max Points
-                                </label>
-                                <input
-                                    type="number" // Use type="number" for numeric input
-                                    name="maxPoints"
-                                    id="maxPoints"
-                                    value={formData.maxPoints || 0} // Now using number
-                                    onChange={handleChange}
-                                    className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700/50 rounded-xl text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                                    placeholder="e.g., 100"
-                                    min="0"
-                                />
-                                {formErrors.find(err => err.path[0] === 'maxPoints') && (
-                                    <p className="text-rose-500 text-xs mt-1">
-                                        {formErrors.find(err => err.path[0] === 'maxPoints')?.message}
-                                    </p>
-                                )}
+                                {/* Max Points Input */}
+                                <div>
+                                    <label htmlFor="maxPoints"
+                                           className="block text-sm font-medium text-gray-300 mb-2">
+                                        Max Points
+                                    </label>
+                                    <input
+                                        type="number" // Use type="number" for numeric input
+                                        name="maxPoints"
+                                        id="maxPoints"
+                                        value={formData.maxPoints || 0} // Now using number
+                                        onChange={handleChange}
+                                        className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700/50 rounded-xl text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                        placeholder="e.g., 100"
+                                        min="0"
+                                    />
+                                    {formErrors.find(err => err.path[0] === 'maxPoints') && (
+                                        <p className="text-rose-500 text-xs mt-1">
+                                            {formErrors.find(err => err.path[0] === 'maxPoints')?.message}
+                                        </p>
+                                    )}
+                                </div>
                             </div>
 
                             {/* Attachments Section */}

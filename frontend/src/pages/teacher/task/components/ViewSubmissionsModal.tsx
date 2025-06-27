@@ -51,7 +51,7 @@ interface Submission {
 interface Task {
     _id: string;
     title: string;
-    maxPoints: string;
+    maxPoints: number;
 }
 
 interface Group {

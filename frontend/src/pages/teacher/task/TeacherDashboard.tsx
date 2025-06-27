@@ -15,8 +15,8 @@ const TeacherDashboard = () => {
     const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
 
     const [searchQuery, setSearchQuery] = useState('');
-    // Fix 1: Change filter status type to match API expectations
-    const [filterStatus, setFilterStatus] = useState<'active' | 'expired' | 'all' | undefined>(undefined);
+    // Fix: Initialize with 'all' instead of undefined to match the select default
+    const [filterStatus, setFilterStatus] = useState<'active' | 'expired' | 'all'>('all');
 
     const {
         data: teacherAuthData,
@@ -26,6 +26,9 @@ const TeacherDashboard = () => {
 
     const currentTeacherId = teacherAuthData?.user?._id || '';
 
+    // Fix: Only pass status to API when it's not 'all'
+    const apiStatus = filterStatus === 'all' ? undefined : filterStatus;
+
     const {
         data: tasksData,
         isLoading: tasksLoading,
@@ -34,7 +37,7 @@ const TeacherDashboard = () => {
         refetch: refetchTasks,
     } = useGetAllTasksQuery({
         teacherId: currentTeacherId,
-        status: filterStatus,
+        status: apiStatus, // Pass undefined for 'all', actual status for 'active'/'expired'
         page: '1',
         limit: '10',
         sortBy: 'createdAt',
@@ -55,8 +58,6 @@ const TeacherDashboard = () => {
         }
         return true;
     });
-
-    // Remove the useEffect that was causing issues - RTK Query will automatically refetch when query params change
 
     const handleEditTask = (task: Task) => {
         setTaskToEdit(task);

@@ -9,6 +9,7 @@ import {
     Upload,
     Loader2,
     AlertCircle,
+    Github,
 } from 'lucide-react';
 // Corrected import path
 import {useCreateTaskMutation} from '../../../../services/taskApi';
@@ -46,6 +47,7 @@ const CreateTaskModal = ({
         deadline: '',
         allowLateSubmission: false,
         maxPoints: '100',
+        githubLink: '', // Added GitHub link field
         files: [] as File[],
     });
 
@@ -104,6 +106,16 @@ const CreateTaskModal = ({
             // Convert files to attachments
             const attachments = await convertFilesToAttachments(selectedFiles);
 
+            // Add GitHub link as an attachment if provided
+            if (taskForm.githubLink.trim()) {
+                attachments.push({
+                    type: 'link',
+                    content: taskForm.githubLink.trim(),
+                    filename: 'GitHub Repository',
+                    originalName: 'GitHub Repository',
+                });
+            }
+
             // Create the task data object that matches CreateTaskInput interface
             const taskData: CreateTaskInput = {
                 title: taskForm.title,
@@ -133,6 +145,7 @@ const CreateTaskModal = ({
             deadline: '',
             allowLateSubmission: false,
             maxPoints: '100',
+            githubLink: '', // Reset GitHub link
             files: [],
         });
         setSelectedFiles([]);
@@ -190,6 +203,17 @@ const CreateTaskModal = ({
         return 'Failed to create task. Please try again.';
     };
 
+    // Validate GitHub URL format
+    const isValidGitHubUrl = (url: string): boolean => {
+        if (!url.trim()) return true; // Empty URL is valid (optional field)
+        try {
+            const urlObj = new URL(url);
+            return urlObj.hostname === 'github.com' || urlObj.hostname === 'www.github.com';
+        } catch {
+            return false;
+        }
+    };
+
     if (!showCreateModal) return null;
 
     return (
@@ -209,6 +233,7 @@ const CreateTaskModal = ({
                             <button
                                 onClick={() => setShowCreateModal(false)}
                                 className="p-2 hover:bg-gray-700/50 rounded-full transition-all duration-200"
+                                title="Close (ESC)"
                             >
                                 <X className="w-6 h-6 text-gray-400 hover:text-white"/>
                             </button>
@@ -253,6 +278,30 @@ const CreateTaskModal = ({
                                     className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700/50 rounded-xl text-gray-100 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-y"
                                     placeholder="Describe the task requirements..."
                                 />
+                            </div>
+
+                            {/* Add GitHub Link Input */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-300 mb-2">
+                                    <Github className="w-4 h-4 inline mr-2"/>
+                                    GitHub Repository Link (Optional)
+                                </label>
+                                <input
+                                    type="url"
+                                    value={taskForm.githubLink}
+                                    onChange={(e) => setTaskForm({...taskForm, githubLink: e.target.value})}
+                                    className={`w-full px-4 py-3 bg-gray-800/50 border rounded-xl text-gray-100 placeholder-gray-500 focus:ring-2 focus:border-transparent transition-all duration-200 ${
+                                        taskForm.githubLink && !isValidGitHubUrl(taskForm.githubLink)
+                                            ? 'border-red-500/50 focus:ring-red-500'
+                                            : 'border-gray-700/50 focus:ring-blue-500'
+                                    }`}
+                                    placeholder="https://github.com/username/repository"
+                                />
+                                {taskForm.githubLink && !isValidGitHubUrl(taskForm.githubLink) && (
+                                    <p className="text-red-400 text-xs mt-1">Please enter a valid GitHub URL</p>
+                                )}
+                                <p className="text-xs text-gray-500 mt-1">Link to the GitHub repository for this
+                                    task</p>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -367,6 +416,29 @@ const CreateTaskModal = ({
                                         ))}
                                     </div>
                                 )}
+
+                                {/* Show GitHub link preview if provided */}
+                                {taskForm.githubLink && isValidGitHubUrl(taskForm.githubLink) && (
+                                    <div className="mt-4">
+                                        <h4 className="text-sm font-medium text-gray-300 mb-2">GitHub Repository:</h4>
+                                        <div
+                                            className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg">
+                                            <div className="flex items-center gap-2">
+                                                <Github className="w-4 h-4 text-gray-400"/>
+                                                <span className="text-sm text-gray-300 truncate max-w-[80%]">
+                                                    {taskForm.githubLink}
+                                                </span>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => setTaskForm({...taskForm, githubLink: ''})}
+                                                className="p-1 hover:bg-red-900/30 rounded-full transition-colors"
+                                            >
+                                                <X className="w-4 h-4 text-red-400"/>
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="flex items-center gap-2">
@@ -391,11 +463,10 @@ const CreateTaskModal = ({
                                     Cancel
                                 </button>
                                 <button
+                                    disabled={createTaskLoading ? true : undefined}
                                     type="submit"
-                                    disabled={createTaskLoading}
-                                    className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl hover:from-blue-600 hover:to-purple-600 transition-all duration-200 disabled:opacity-50 flex items-center gap-2"
                                 >
-                                    {createTaskLoading && <Loader2 className="w-4 h-4 animate-spin"/>}
+                                    {createTaskLoading && <Loader2/>}
                                     {createTaskLoading ? 'Creating...' : 'Create Task'}
                                 </button>
                             </div>

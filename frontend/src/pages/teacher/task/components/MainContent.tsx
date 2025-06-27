@@ -8,8 +8,8 @@ interface MainContentProps {
     tasks: Task[],
     searchQuery: string,
     setSearchQuery: (query: string) => void,
-    filterStatus: 'all' | 'active' | 'expired' | undefined,
-    setFilterStatus: (status: 'all' | 'active' | 'expired' | undefined) => void,
+    filterStatus: 'all' | 'active' | 'expired', // Remove undefined from type
+    setFilterStatus: (status: 'all' | 'active' | 'expired') => void, // Remove undefined from type
     setShowCreateModal: (show: boolean) => void,
     isFetching: boolean,
     onEditTask: (task: Task) => void;
