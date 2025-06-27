@@ -7,14 +7,17 @@ import Header from './components/Header';
 import StudentMainContent from './components/StudentMainContent';
 import SubmitTaskModal from './components/SubmitTaskModal';
 import ViewSubmissionModal from './components/ViewSubmissionModal';
+import ViewTaskDetailsModal from './components/ViewTaskDetailsModal'; // New import
 import {useGetAllGroupsQuery} from "../../../services/groupApi.ts";
 
 const StudentDashboard = () => {
     // Modal states - keep these stable
     const [showSubmitModal, setShowSubmitModal] = useState(false);
     const [showViewSubmissionModal, setShowViewSubmissionModal] = useState(false);
+    const [showViewTaskDetailsModal, setShowViewTaskDetailsModal] = useState(false); // New state
     const [taskToSubmit, setTaskToSubmit] = useState<StudentTask | null>(null);
     const [submissionToViewId, setSubmissionToViewId] = useState<string | null>(null);
+    const [taskToViewDetails, setTaskToViewDetails] = useState<StudentTask | null>(null); // New state
 
     // Filter states
     const [searchQuery, setSearchQuery] = useState('');
@@ -53,7 +56,7 @@ const StudentDashboard = () => {
         {
             studentId: studentId,
             groupIds: studentGroupId ? [studentGroupId] : [],
-            status: filterStatus,
+            status: filterStatus, // The API query already correctly uses this filter
             sortBy: 'deadline',
             sortOrder: 'asc',
         },
@@ -63,11 +66,13 @@ const StudentDashboard = () => {
     const tasks: StudentTask[] = tasksData?.tasks || [];
 
     // Memoize filtered tasks to prevent unnecessary re-renders
+    // FIX: Added filterStatus to the dependency array.
+    // The list now correctly re-filters when the status dropdown changes.
     const filteredAndSearchedTasks = useMemo(() =>
         tasks.filter(task =>
             task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
             task.description.toLowerCase().includes(searchQuery.toLowerCase())
-        ), [tasks, searchQuery]
+        ), [tasks, searchQuery, filterStatus] // Added filterStatus here
     );
 
     // Use useCallback to prevent function recreation on every render
@@ -79,6 +84,12 @@ const StudentDashboard = () => {
     const handleOpenViewSubmissionModal = useCallback((submissionId: string) => {
         setSubmissionToViewId(submissionId);
         setShowViewSubmissionModal(true);
+    }, []);
+
+    // New callback for opening task details modal
+    const handleOpenViewTaskDetailsModal = useCallback((task: StudentTask) => {
+        setTaskToViewDetails(task);
+        setShowViewTaskDetailsModal(true);
     }, []);
 
     // Stable refetch function that doesn't cause modal to close
@@ -138,6 +149,7 @@ const StudentDashboard = () => {
                 setFilterStatus={setFilterStatus}
                 onOpenSubmitModal={handleOpenSubmitModal}
                 onOpenViewSubmissionModal={handleOpenViewSubmissionModal}
+                onOpenViewTaskDetailsModal={handleOpenViewTaskDetailsModal} // New prop
                 isFetching={isFetching}
             />
 
@@ -153,6 +165,13 @@ const StudentDashboard = () => {
                 showViewSubmissionModal={showViewSubmissionModal}
                 setShowViewSubmissionModal={setShowViewSubmissionModal}
                 submissionId={submissionToViewId || ''}
+            />
+
+            {/* New Task Details Modal */}
+            <ViewTaskDetailsModal
+                showModal={showViewTaskDetailsModal}
+                setShowModal={setShowViewTaskDetailsModal}
+                task={taskToViewDetails}
             />
         </div>
     );

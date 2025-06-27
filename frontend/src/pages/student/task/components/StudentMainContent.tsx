@@ -1,15 +1,29 @@
 import {FileText, Loader2} from 'lucide-react';
-import StudentTaskCard from './StudentTaskCard'; // Will create this component
-import SearchFilterBar from '../../../teacher/task/components/SearchFilterBar'; // Reusing the existing SearchFilterBar
+import StudentTaskCard from './StudentTaskCard';
+import SearchFilterBar from '../../../teacher/task/components/SearchFilterBar';
+
+// FIX: Update this interface to match the one expected by StudentTaskCard.
+// This ensures the 'tasks' prop has all the necessary fields.
+interface StudentTask {
+    _id: string;
+    title: string;
+    description: string;
+    deadline: string;
+    maxPoints: string;
+    assignedGroups: string[];
+    submissionStatus?: 'submitted' | 'not_submitted' | 'late_submitted';
+    submissionId?: string;
+}
 
 interface StudentMainContentProps {
-    tasks: any[]; // Assuming StudentTask[] type from StudentDashboard
+    tasks: StudentTask[];
     searchQuery: string;
     setSearchQuery: (query: string) => void;
     filterStatus: 'all' | 'active' | 'expired';
     setFilterStatus: (status: 'all' | 'active' | 'expired') => void;
-    onOpenSubmitModal: (task: any) => void; // Assuming StudentTask type
+    onOpenSubmitModal: (task: StudentTask) => void;
     onOpenViewSubmissionModal: (submissionId: string) => void;
+    onOpenViewTaskDetailsModal: (task: StudentTask) => void;
     isFetching: boolean;
 }
 
@@ -21,6 +35,7 @@ const StudentMainContent = ({
                                 setFilterStatus,
                                 onOpenSubmitModal,
                                 onOpenViewSubmissionModal,
+                                onOpenViewTaskDetailsModal,
                                 isFetching,
                             }: StudentMainContentProps) => {
     return (
@@ -52,6 +67,7 @@ const StudentMainContent = ({
                         task={task}
                         onOpenSubmitModal={onOpenSubmitModal}
                         onOpenViewSubmissionModal={onOpenViewSubmissionModal}
+                        onOpenViewTaskDetailsModal={onOpenViewTaskDetailsModal}
                     />
                 ))}
             </div>

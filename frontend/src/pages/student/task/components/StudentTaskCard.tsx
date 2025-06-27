@@ -1,4 +1,4 @@
-import {Calendar, FileText, CheckCircle, Clock, ExternalLink} from 'lucide-react';
+import {Calendar, FileText, CheckCircle, Clock, ExternalLink, Eye} from 'lucide-react';
 import {motion} from 'framer-motion';
 
 // This interface should match the structure of a task object relevant to the student
@@ -17,9 +17,15 @@ interface StudentTaskCardProps {
     task: StudentTask;
     onOpenSubmitModal: (task: StudentTask) => void;
     onOpenViewSubmissionModal: (submissionId: string) => void;
+    onOpenViewTaskDetailsModal: (task: StudentTask) => void; // New prop for viewing task details
 }
 
-const StudentTaskCard = ({task, onOpenSubmitModal, onOpenViewSubmissionModal}: StudentTaskCardProps) => {
+const StudentTaskCard = ({
+                             task,
+                             onOpenSubmitModal,
+                             onOpenViewSubmissionModal,
+                             onOpenViewTaskDetailsModal
+                         }: StudentTaskCardProps) => {
     const formatDate = (dateString: string) => {
         return new Date(dateString).toLocaleDateString('en-US', {
             month: 'short',
@@ -85,29 +91,47 @@ const StudentTaskCard = ({task, onOpenSubmitModal, onOpenViewSubmissionModal}: S
                     <strong>Max Points:</strong> {task.maxPoints}
                 </div>
             </div>
-            <div className="border-t border-gray-200 dark:border-gray-700 p-4 flex justify-end space-x-2">
-                {isSubmitted ? (
-                    <motion.button
-                        whileHover={{scale: 1.05}}
-                        whileTap={{scale: 0.95}}
-                        onClick={() => task.submissionId && onOpenViewSubmissionModal(task.submissionId)}
-                        className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl text-sm font-medium hover:from-blue-600 hover:to-indigo-700 transition-all duration-200 shadow-md"
-                    >
-                        <ExternalLink className="w-4 h-4 mr-2"/>
-                        View Submission
-                    </motion.button>
-                ) : (
-                    <motion.button
-                        whileHover={{scale: 1.05}}
-                        whileTap={{scale: 0.95}}
-                        onClick={() => onOpenSubmitModal(task)}
-                        disabled={isTaskExpired} // Disable if task is expired
-                        className={`inline-flex items-center px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl text-sm font-medium ${isTaskExpired ? 'opacity-50 cursor-not-allowed' : 'hover:from-indigo-600 hover:to-purple-700'} transition-all duration-200 shadow-md`}
-                    >
-                        <FileText className="w-4 h-4 mr-2"/>
-                        Submit Task
-                    </motion.button>
-                )}
+            <div className="border-t border-gray-200 dark:border-gray-700 p-4 flex justify-between items-center">
+                {/* View Details Button */}
+                <motion.button
+                    whileHover={{scale: 1.05}}
+                    whileTap={{scale: 0.95}}
+                    onClick={() => onOpenViewTaskDetailsModal(task)}
+                    className="inline-flex items-center px-3 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl text-sm font-medium transition-all duration-200"
+                    title="View task details"
+                >
+                    <Eye className="w-4 h-4 mr-2"/>
+                    Details
+                </motion.button>
+
+                {/* Action Buttons */}
+                <div className="flex space-x-2">
+                    {isSubmitted ? (
+                        <motion.button
+                            whileHover={{scale: 1.05}}
+                            whileTap={{scale: 0.95}}
+                            onClick={() => task.submissionId && onOpenViewSubmissionModal(task.submissionId)}
+                            disabled={!task.submissionId} // Defensively disable if submissionId is missing
+                            className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl text-sm font-medium hover:from-blue-600 hover:to-indigo-700 transition-all duration-200 shadow-md disabled:opacity-50"
+                        >
+                            <ExternalLink className="w-4 h-4 mr-2"/>
+                            View Submission
+                        </motion.button>
+                    ) : (
+                        // FIX: Removed the disabled={isTaskExpired} attribute.
+                        // This allows for late submissions. The system can now mark a submission
+                        // as 'late_submitted' instead of preventing it entirely.
+                        <motion.button
+                            whileHover={{scale: 1.05}}
+                            whileTap={{scale: 0.95}}
+                            onClick={() => onOpenSubmitModal(task)}
+                            className={`inline-flex items-center px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl text-sm font-medium ${isTaskExpired ? 'opacity-80' : ''} hover:from-indigo-600 hover:to-purple-700 transition-all duration-200 shadow-md`}
+                        >
+                            <FileText className="w-4 h-4 mr-2"/>
+                            Submit Task
+                        </motion.button>
+                    )}
+                </div>
             </div>
         </motion.div>
     );
