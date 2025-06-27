@@ -1,4 +1,4 @@
-import {useState, useEffect} from 'react';
+import {useState} from 'react';
 import {useGetAllTasksQuery} from '../../../services/taskApi'; // Corrected path
 import {useCheckTeacherAuthQuery} from '../../../services/authCheck'; // Corrected path
 import Header from './components/Header';
@@ -15,7 +15,8 @@ const TeacherDashboard = () => {
     const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
 
     const [searchQuery, setSearchQuery] = useState('');
-    const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'expired'>('all');
+    // Fix 1: Change filter status type to match API expectations
+    const [filterStatus, setFilterStatus] = useState<'active' | 'expired' | 'all' | undefined>(undefined);
 
     const {
         data: teacherAuthData,
@@ -33,26 +34,34 @@ const TeacherDashboard = () => {
         refetch: refetchTasks,
     } = useGetAllTasksQuery({
         teacherId: currentTeacherId,
-        status: filterStatus !== 'all' ? filterStatus : undefined,
+        status: filterStatus,
         page: '1',
         limit: '10',
         sortBy: 'createdAt',
         sortOrder: 'desc',
     }, {skip: !currentTeacherId});
 
-    const tasks: Task[] = tasksData?.tasks || [];
+    // Fix 2: Type assertion to handle Task interface mismatch
+    const tasks: Task[] = (tasksData?.tasks || []) as unknown as Task[];
 
-    useEffect(() => {
-        if (currentTeacherId) {
-            refetchTasks();
+    // Client-side search filtering (since backend doesn't handle search)
+    const filteredTasks = tasks.filter(task => {
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase().trim();
+            return (
+                task.title?.toLowerCase().includes(query) ||
+                task.description?.toLowerCase().includes(query)
+            );
         }
-    }, [filterStatus, currentTeacherId, refetchTasks]);
+        return true;
+    });
+
+    // Remove the useEffect that was causing issues - RTK Query will automatically refetch when query params change
 
     const handleEditTask = (task: Task) => {
         setTaskToEdit(task);
         setShowEditModal(true);
     };
-
 
     if (teacherLoading || tasksLoading) {
         return (
@@ -63,7 +72,25 @@ const TeacherDashboard = () => {
     }
 
     if (teacherError || tasksError) {
-        const errorMessage = tasksError?.error || (teacherError as any)?.data?.message || 'Failed to load data';
+        // Fix 3: Proper error handling for RTK Query errors
+        let errorMessage = 'Failed to load data';
+
+        if (tasksError) {
+            if ('status' in tasksError) {
+                // FetchBaseQueryError
+                errorMessage = `Error ${tasksError.status}: ${JSON.stringify(tasksError.data)}`;
+            } else if ('message' in tasksError) {
+                // SerializedError
+                errorMessage = tasksError.message || 'Unknown error occurred';
+            }
+        } else if (teacherError) {
+            if ('status' in teacherError) {
+                errorMessage = `Auth Error ${teacherError.status}: ${JSON.stringify(teacherError.data)}`;
+            } else if ('message' in teacherError) {
+                errorMessage = teacherError.message || 'Authentication failed';
+            }
+        }
+
         return (
             <div className="flex justify-center items-center min-h-screen bg-red-50 dark:bg-red-900">
                 <div
@@ -86,7 +113,7 @@ const TeacherDashboard = () => {
             <Toaster position="top-right" reverseOrder={false}/>
             <Header/>
             <MainContent
-                tasks={tasks}
+                tasks={filteredTasks}
                 searchQuery={searchQuery}
                 setSearchQuery={setSearchQuery}
                 filterStatus={filterStatus}

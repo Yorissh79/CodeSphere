@@ -1,4 +1,4 @@
-import {Calendar, Eye, Edit, Trash2, X, AlertTriangle} from 'lucide-react';
+import {Calendar, Eye, Edit, Trash2, X, AlertTriangle, Users} from 'lucide-react';
 // Corrected import path
 import type {Task} from '../../../../types/api';
 // Corrected import path
@@ -8,6 +8,8 @@ import {useGetAllGroupsQuery} from '../../../../services/groupApi';
 import {useState} from 'react';
 // Corrected import path
 import {useDeleteTaskByIdMutation} from '../../../../services/taskApi';
+// Add import for submissions query - adjust path as needed
+import {useGetSubmissionsQuery} from '../../../../services/submissionsApi';
 import {toast} from 'react-hot-toast'; // Assuming you use react-hot-toast or similar for notifications
 import ViewSubmissionsModal from './ViewSubmissionsModal'; // Import the new modal component
 
@@ -27,6 +29,17 @@ const TaskCard = ({task, onEdit}: TaskCardProps) => {
 
     // Fetch all groups to map IDs to names
     const {data: groupsData} = useGetAllGroupsQuery({});
+
+    // Fetch all submissions and filter by task ID
+    const {data: submissionsData} = useGetSubmissionsQuery({});
+
+    // Filter submissions for this specific task
+    // taskId is an object with _id property in your API response
+    const taskSubmissions = submissionsData?.submissions?.filter(
+        (submission: any) => submission.taskId?._id === task._id
+    ) || [];
+
+    const submissionCount = taskSubmissions.length;
 
     const formatDate = (dateString: string) => {
         return new Date(dateString).toLocaleDateString('en-US', {
@@ -108,8 +121,17 @@ const TaskCard = ({task, onEdit}: TaskCardProps) => {
                             return group ? group.group : groupId;
                         }).join(', ')}
                     </div>
-                    <div className="text-gray-500 dark:text-gray-400 text-sm mb-4">
+                    <div className="text-gray-500 dark:text-gray-400 text-sm mb-2">
                         <strong>Max Points:</strong> {task.maxPoints}
+                    </div>
+                    {/* Add submission counter */}
+                    <div className="text-gray-500 dark:text-gray-400 text-sm mb-4 flex items-center">
+                        <Users className="w-4 h-4 mr-2"/>
+                        <strong>Submissions:</strong>
+                        <span
+                            className="ml-1 px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-xs font-medium">
+                            {submissionCount}
+                        </span>
                     </div>
                 </div>
                 <div className="border-t border-gray-200 dark:border-gray-700 p-4 flex justify-between items-center">

@@ -51,7 +51,7 @@ interface Submission {
 interface Task {
     _id: string;
     title: string;
-    maxPoints: number;
+    maxPoints: string;
 }
 
 interface Group {
@@ -64,6 +64,20 @@ interface ViewSubmissionsModalProps {
     showModal: boolean;
     setShowModal: (show: boolean) => void;
 }
+
+// Add this type definition at the top of your file with other interfaces
+interface ApiError {
+    status: number;
+    data?: {
+        message?: string;
+        error?: string;
+    };
+}
+
+const isApiError = (error: any): error is ApiError => {
+    return error && typeof error === 'object' && 'status' in error;
+};
+
 
 // Utility to map submission status to Tailwind classes
 const getStatusColor = (status: Submission['status']): string => {
@@ -111,6 +125,18 @@ const ViewSubmissionsModal: React.FC<ViewSubmissionsModalProps> = ({task, showMo
         debounce((value: string) => setSearchTerm(value), 300),
         []
     );
+
+    const getErrorMessage = (error: any): string => {
+        if (isApiError(error)) {
+            return error.data?.message || error.data?.error || `Error ${error.status}`;
+        }
+
+        if (error && typeof error === 'object' && 'message' in error) {
+            return error.message;
+        }
+
+        return 'Unknown error occurred';
+    };
 
     // Type guard to check if studentId is a Student object
     const isStudentObject = (studentId: Submission['studentId']): studentId is Student => {
@@ -370,7 +396,7 @@ const ViewSubmissionsModal: React.FC<ViewSubmissionsModalProps> = ({task, showMo
                                         <AlertCircle className="w-8 h-8 mb-2"/>
                                         <p>Error loading submissions. Please try again.</p>
                                         <p className="text-sm text-gray-500 dark:text-gray-400">
-                                            {error && 'status' in error ? `Error ${error.status}: ${error.data?.message || 'Unknown error'}` : 'Unknown error'}
+                                            {getErrorMessage(error)}
                                         </p>
                                     </div>
                                 )}

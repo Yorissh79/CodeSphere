@@ -42,14 +42,14 @@ export interface Task {
     };
     assignedGroups: string[];
     attachments: Attachment[];
-    deadline: string;
-    allowLateSubmission: boolean;
-    maxPoints: number;
-    createdAt: string;
-    updatedAt: string;
-    submissionCount: number;
-    totalStudents: number;
-    dueDate: string;
+    deadline: string; // ISO date string
+    allowLateSubmission: boolean | undefined; // Changed from string to boolean
+    maxPoints: number; // Changed from string to number
+    createdAt: string; // ISO date string
+    updatedAt: string; // ISO date string
+    submissionCount: number | undefined; // Changed from string to number
+    totalStudents: number | undefined;
+    dueDate: string; // ISO date string
 }
 
 export interface CreateTaskInput {
@@ -67,7 +67,7 @@ interface GetTasksQuery {
     limit?: string;
     group?: string;
     teacherId?: string;
-    status?: 'active' | 'expired';
+    status?: 'active' | 'expired' | 'all';
     sortBy?: 'createdAt' | 'deadline' | 'title';
     sortOrder?: 'asc' | 'desc';
 }
@@ -89,7 +89,7 @@ export interface UpdateTaskInput {
     assignedGroups?: string[];
     deadline?: string;
     allowLateSubmission?: boolean;
-    maxPoints?: string;
+    maxPoints?: number;
     attachments?: Attachment[]; // All attachment types allowed for update
 }
 

@@ -5,8 +5,8 @@ import {useState} from "react";
 interface SearchFilterBarProps {
     searchQuery: string;
     setSearchQuery: (query: string) => void;
-    filterStatus: string;
-    setFilterStatus: (status: string) => void;
+    filterStatus: 'all' | 'active' | 'expired' | undefined;
+    setFilterStatus: (status: 'all' | 'active' | 'expired') => void;
 }
 
 const SearchFilterBar = ({searchQuery, setSearchQuery, filterStatus, setFilterStatus}: SearchFilterBarProps) => {
@@ -34,9 +34,10 @@ const SearchFilterBar = ({searchQuery, setSearchQuery, filterStatus, setFilterSt
             <div className="relative">
                 <motion.select
                     value={filterStatus}
-                    onChange={(e) => setFilterStatus(e.target.value)}
+                    onChange={(e) => setFilterStatus(e.target.value as 'all' | 'active' | 'expired')}
+                    onFocus={() => setIsOpen(true)}
+                    onBlur={() => setIsOpen(false)}
                     className="appearance-none w-full sm:w-48 pl-4 pr-10 py-3 bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-300 shadow-sm hover:shadow-md text-gray-900 dark:text-gray-100 cursor-pointer"
-                    onClick={() => setIsOpen(!isOpen)}
                 >
                     <option value="all">All Status</option>
                     <option value="active">Active</option>

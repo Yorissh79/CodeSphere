@@ -8,8 +8,8 @@ interface MainContentProps {
     tasks: Task[],
     searchQuery: string,
     setSearchQuery: (query: string) => void,
-    filterStatus: 'all' | 'active' | 'expired',
-    setFilterStatus: (status: 'all' | 'active' | 'expired') => void,
+    filterStatus: 'all' | 'active' | 'expired' | undefined,
+    setFilterStatus: (status: 'all' | 'active' | 'expired' | undefined) => void,
     setShowCreateModal: (show: boolean) => void,
     isFetching: boolean,
     onEditTask: (task: Task) => void;
@@ -25,6 +25,7 @@ const MainContent = ({
                          isFetching,
                          onEditTask,
                      }: MainContentProps) => {
+
     return (
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-8">
@@ -63,8 +64,14 @@ const MainContent = ({
             {tasks.length === 0 && !isFetching && (
                 <div className="text-center py-12">
                     <FileText className="w-16 h-16 text-gray-400 dark:text-gray-500 mx-auto mb-4"/>
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No tasks found</h3>
-                    <p className="text-gray-600 dark:text-gray-400">Try adjusting your search or filter criteria</p>
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+                        {searchQuery || filterStatus !== 'all' ? 'No matching tasks found' : 'No tasks found'}
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-400">
+                        {searchQuery || filterStatus !== 'all'
+                            ? 'Try adjusting your search or filter criteria'
+                            : 'Create your first task to get started'}
+                    </p>
                 </div>
             )}
         </main>

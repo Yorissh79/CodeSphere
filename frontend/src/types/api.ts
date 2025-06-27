@@ -17,13 +17,13 @@ export interface Task {
         originalName?: string;
     }[];
     deadline: string; // ISO date string
-    allowLateSubmission: string;
-    maxPoints: string;
+    allowLateSubmission: boolean | undefined;
+    maxPoints: number;
     createdAt: string;
     updatedAt: string;
-    dueDate?: string; // For frontend compatibility
-    submissionCount?: number; // Optional, may be added by backend
-    totalStudents?: number; // Optional, may be added by backend
+    dueDate: string; // For frontend compatibility
+    submissionCount: number | undefined; // Optional, may be added by backend
+    totalStudents: number | undefined; // Optional, may be added by backend
 }
 
 export interface Pagination {

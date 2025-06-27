@@ -95,7 +95,20 @@ const StudentDashboard = () => {
     }
 
     if (studentAuthError || tasksError || groupError) {
-        const errorMessage = tasksError?.message || (studentAuthError as any)?.message || groupError?.message || 'Failed to load data';
+        const getErrorMessage = (error: any) => {
+            if ('message' in error) return error.message;
+            if ('data' in error && typeof error.data === 'string') return error.data;
+            if ('data' in error && error.data?.message) return error.data.message;
+            if ('status' in error) return `Error ${error.status}`;
+            return 'Unknown error occurred';
+        };
+
+        const errorMessage =
+            (tasksError && getErrorMessage(tasksError)) ||
+            (studentAuthError && getErrorMessage(studentAuthError)) ||
+            (groupError && getErrorMessage(groupError)) ||
+            'Failed to load data';
+
         return (
             <div className="flex justify-center items-center min-h-screen bg-red-50 dark:bg-red-900">
                 <div

@@ -1,5 +1,3 @@
-// CodeEditor.tsx
-
 import React, {useState, useCallback, useMemo, useRef, useEffect} from 'react';
 import Editor from '@monaco-editor/react';
 import JSZip from 'jszip';
@@ -77,7 +75,7 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({value, language, onChange, o
     const handleEditorDidMount = (editor: any, monaco: any) => {
         editorRef.current = editor;
 
-        // Configure Monaco themes and settings
+        // Configure Monaco themes
         monaco.editor.defineTheme('custom-dark', {
             base: 'vs-dark',
             inherit: true,
@@ -96,6 +94,27 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({value, language, onChange, o
             }
         });
 
+        monaco.editor.defineTheme('custom-light', {
+            base: 'vs',
+            inherit: true,
+            rules: [
+                {token: 'comment', foreground: '008000'},
+                {token: 'keyword', foreground: '0000FF'},
+                {token: 'string', foreground: 'A31515'},
+                {token: 'number', foreground: '098658'},
+            ],
+            colors: {
+                'editor.background': '#FFFFFF',
+                'editor.foreground': '#000000',
+                'editorLineNumber.foreground': '#2B91AF',
+                'editor.selectionBackground': '#ADD6FF',
+                'editor.inactiveSelectionBackground': '#E5EBF1',
+            }
+        });
+
+        // Set theme based on darkMode
+        monaco.editor.setTheme('custom-dark');
+
         // Set up auto-completion for HTML
         if (language === 'html') {
             monaco.languages.setLanguageConfiguration('html', {
@@ -103,17 +122,16 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({value, language, onChange, o
                     {open: '<', close: '>'},
                     {open: '"', close: '"'},
                     {open: "'", close: "'"},
-                    {open: ''}
                 ],
                 surroundingPairs: [
                     {open: '<', close: '>'},
                     {open: '"', close: '"'},
-                    {open: "'", close: "'"}
+                    {open: "'", close: "'"},
                 ]
             });
             monaco.languages.registerCompletionItemProvider('html', {
                 triggerCharacters: ['!'],
-                provideCompletionItems: (model: { getLineContent: (arg0: any) => any; }, position: {
+                provideCompletionItems: (model: { getLineContent: (arg0: any) => any }, position: {
                     lineNumber: any;
                     column: number;
                 }) => {
@@ -122,7 +140,7 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({value, language, onChange, o
 
                     let range;
                     if (textBeforeCursor.endsWith('!')) {
-                        const startColumn = position.column - '!!!'.length;
+                        const startColumn = position.column - '!'.length;
                         range = {
                             startLineNumber: position.lineNumber,
                             endLineNumber: position.lineNumber,
@@ -130,9 +148,6 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({value, language, onChange, o
                             endColumn: position.column
                         };
                     } else {
-                        // If '!!!' is not found right before the cursor,
-                        // insert at current position. This is the fallback for when
-                        // the user types '!' and expects the suggestion without '!!!' pre-existing.
                         range = {
                             startLineNumber: position.lineNumber,
                             endLineNumber: position.lineNumber,
@@ -143,12 +158,12 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({value, language, onChange, o
 
                     const suggestions = [
                         {
-                            label: '!!!',
+                            label: '!',
                             kind: monaco.languages.CompletionItemKind.Snippet,
                             insertText: '<!DOCTYPE html>\n<html lang="en">\n<head>\n    <meta charset="UTF-8">\n    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n    <title>Document</title>\n</head>\n<body>\n    $0\n</body>\n</html>',
                             insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
                             documentation: 'HTML5 DOCTYPE template',
-                            range: range // Set the calculated range here
+                            range: range
                         },
                         {
                             label: 'div',
@@ -156,9 +171,7 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({value, language, onChange, o
                             insertText: '<div>\n\t$0\n</div>',
                             insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
                             documentation: 'HTML div element',
-                            // For other snippets, if you don't want them to replace text
-                            // but just insert, you can leave range as null or calculated to current cursor
-                            range: { // Example for div, if you want it to replace 'div' if typed
+                            range: {
                                 startLineNumber: position.lineNumber,
                                 endLineNumber: position.lineNumber,
                                 startColumn: position.column - (textBeforeCursor.endsWith('div') ? 'div'.length : 0),
@@ -168,10 +181,9 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({value, language, onChange, o
                         {
                             label: 'button',
                             kind: monaco.languages.CompletionItemKind.Snippet,
-                            insertText: '<button type="button">$0</button>',
+                            insertText: '<button>$0</button>',
                             insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
                             documentation: 'HTML button element',
-                            // Same logic for button
                             range: {
                                 startLineNumber: position.lineNumber,
                                 endLineNumber: position.lineNumber,
@@ -188,10 +200,10 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({value, language, onChange, o
         // Set up auto-completion for CSS
         if (language === 'css') {
             monaco.languages.registerCompletionItemProvider('css', {
-                provideCompletionItems: (model: { getLineContent: (arg0: any) => any; }, position: {
+                provideCompletionItems: (model: { getLineContent: (arg0: any) => any }, position: {
                     lineNumber: any;
                     column: number;
-                }) => { // Added model and position for consistency
+                }) => {
                     const line = model.getLineContent(position.lineNumber);
                     const textBeforeCursor = line.substring(0, position.column - 1);
 
@@ -201,7 +213,7 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({value, language, onChange, o
                             kind: monaco.languages.CompletionItemKind.Snippet,
                             insertText: 'display: flex;\njustify-content: center;\nalign-items: center;',
                             documentation: 'Flexbox centering',
-                            range: { // Example for CSS snippet
+                            range: {
                                 startLineNumber: position.lineNumber,
                                 endLineNumber: position.lineNumber,
                                 startColumn: position.column - (textBeforeCursor.endsWith('flexbox-center') ? 'flexbox-center'.length : 0),
@@ -213,7 +225,7 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({value, language, onChange, o
                             kind: monaco.languages.CompletionItemKind.Snippet,
                             insertText: 'display: grid;\ngrid-template-columns: repeat(auto-fit, minmax(250px, 1fr));\ngap: 1rem;',
                             documentation: 'Responsive grid layout',
-                            range: { // Example for CSS snippet
+                            range: {
                                 startLineNumber: position.lineNumber,
                                 endLineNumber: position.lineNumber,
                                 startColumn: position.column - (textBeforeCursor.endsWith('grid-layout') ? 'grid-layout'.length : 0),
@@ -257,26 +269,20 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({value, language, onChange, o
     };
 
     return (
-        <div className="h-full">
-            <Editor
-                height="100%"
-                language={getMonacoLanguage(language)}
-                value={value}
-                theme="vs-dark"
-                onChange={handleEditorChange}
-                onMount={handleEditorDidMount}
-                options={defaultOptions}
-                loading={
-                    <div className="flex items-center justify-center h-full bg-gray-900 text-gray-300">
-                        <div className="text-center">
-                            <div
-                                className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-400 mx-auto mb-2"></div>
-                            <div>Loading Editor...</div>
-                        </div>
-                    </div>
-                }
-            />
-        </div>
+        <Editor
+            height="100%"
+            width="100%"
+            language={getMonacoLanguage(language)}
+            value={value}
+            onChange={handleEditorChange}
+            options={defaultOptions}
+            onMount={handleEditorDidMount}
+            loading={
+                <div className="flex items-center justify-center h-full bg-white dark:bg-gray-800">
+                    <span className="text-gray-600 dark:text-gray-300">Loading Editor...</span>
+                </div>
+            }
+        />
     );
 };
 
@@ -286,16 +292,8 @@ interface FileExplorerProps {
     folders: EditorFolder[];
     activeFileId: string;
     onFileSelect: (fileId: string) => void;
-    onFileCreate: (parentId?: {
-        name: string;
-        parentId?: string | undefined;
-        type?: "html" | "css" | "javascript" | "typescript" | "json" | "markdown" | undefined
-    }) => void;
-    onFolderCreate: (parentId?: {
-        name: string;
-        parentId?: string | undefined;
-        type?: "html" | "css" | "javascript" | "typescript" | "json" | "markdown" | undefined
-    }) => void;
+    onFileCreate: (data: { name: string; parentId?: string; type?: FileType }) => void;
+    onFolderCreate: (data: { name: string; parentId?: string }) => void;
     onFileDelete: (fileId: string) => void;
     onFolderDelete: (folderId: string) => void;
     onFileRename: (fileId: string, newName: string) => void;
@@ -341,11 +339,11 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
             case 'typescript':
                 return <Code className="w-4 h-4 text-blue-600"/>;
             case 'json':
-                return <FileText className="w-4 h-4 text-green-500"/>;
+                return <Database className="w-4 h-4 text-gray-500"/>;
             case 'markdown':
-                return <FileText className="w-4 h-4 text-gray-500"/>;
+                return <FileText className="w-4 h-4 text-green-500"/>;
             default:
-                return <Code className="w-4 h-4 text-gray-500"/>;
+                return <FileText className="w-4 h-4 text-gray-500"/>;
         }
     };
 
@@ -365,12 +363,12 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
         const isActive = isFile && item.id === activeFileId;
 
         return (
-            <div key={item.id}>
+            <div key={item.id} className="select-none">
                 <div
-                    className={`flex items-center gap-2 px-2 py-1 cursor-pointer hover:bg-gray-100 group ${
-                        isActive ? 'bg-blue-50 border-r-2 border-blue-500' : ''
+                    className={`flex items-center justify-between px-2 py-1 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 ${
+                        isActive ? 'bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'
                     }`}
-                    style={{paddingLeft: `${level * 16 + 8}px`}}
+                    style={{paddingLeft: `${level * 1.5}rem`}}
                     onClick={() => {
                         if (isFolder) {
                             onFolderToggle(item.id);
@@ -379,22 +377,22 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
                         }
                     }}
                 >
-                    {isFolder ? (
-                        (item as EditorFolder).isExpanded ?
-                            <FolderOpen className="w-4 h-4 text-blue-500"/> :
-                            <Folder className="w-4 h-4 text-blue-500"/>
-                    ) : (
-                        getFileIcon((item as EditorFile).type)
-                    )}
-
-                    <span className={`flex-1 natt text-sm ${isActive ? 'font-medium text-blue-700' : 'text-gray-700'}`}>
-                        {item.name}
-                        {isFile && (item as EditorFile).isModified && (
-                            <span className="ml-1 text-orange-500">•</span>
+                    <div className="flex items-center gap-2">
+                        {isFolder ? (
+                            (item as EditorFolder).isExpanded ? (
+                                <FolderOpen className="w-4 h-4 text-yellow-500"/>
+                            ) : (
+                                <Folder className="w-4 h-4 text-yellow-500"/>
+                            )
+                        ) : (
+                            getFileIcon((item as EditorFile).type)
                         )}
-                    </span>
-
-                    <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1">
+                        <span className="truncate">{item.name}</span>
+                        {isFile && (item as EditorFile).isModified && (
+                            <span className="text-xs text-gray-500 dark:text-gray-400">•</span>
+                        )}
+                    </div>
+                    <div className="flex items-center gap-1">
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
@@ -404,10 +402,10 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
                                     startEditing(item.id, item.name);
                                 }
                             }}
-                            className="p-1 hover:bg-gray-200 rounded"
+                            className="p-1 hover:bg-gray-300 dark:hover:bg-gray-600 rounded"
                             title="Rename"
                         >
-                            <Edit3 className="w-3 h-3 text-gray-500"/>
+                            <Edit3 className="w-3 h-3 text-gray-600 dark:text-gray-300"/>
                         </button>
                         <button
                             onClick={(e) => {
@@ -418,14 +416,13 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
                                     onFileDelete(item.id);
                                 }
                             }}
-                            className="p-1 hover:bg-gray-200 rounded"
+                            className="p-1 hover:bg-gray-300 dark:hover:bg-gray-600 rounded"
                             title="Delete"
                         >
-                            <Trash2 className="w-3 h-3 text-red-500"/>
+                            <Trash2 className="w-3 h-3 text-gray-600 dark:text-gray-300"/>
                         </button>
                     </div>
                 </div>
-
                 {isFolder && (item as EditorFolder).isExpanded && (
                     <div>
                         {folders
@@ -495,30 +492,34 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
 
         return (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                <div className="bg-white rounded-lg p-6 w-96 max-w-full mx-4">
-                    <h3 className="text-lg font-semibold mb-4">{title}</h3>
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Name
-                            </label>
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-md">
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">{title}</h2>
+                        <button onClick={onClose}
+                                className="text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100">
+                            <X className="w-5 h-5"/>
+                        </button>
+                    </div>
+                    <form onSubmit={handleSubmit}>
+                        <div className="mb-4">
+                            <label
+                                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
                             <input
                                 type="text"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-200"
                                 autoFocus
                             />
                         </div>
                         {isFileOperation && (
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    File Type
-                                </label>
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">File
+                                    Type</label>
                                 <select
                                     value={fileType}
                                     onChange={(e) => setFileType(e.target.value as FileType)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-200"
                                 >
                                     <option value="html">HTML</option>
                                     <option value="css">CSS</option>
@@ -529,17 +530,17 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
                                 </select>
                             </div>
                         )}
-                        <div className="flex justify-end gap-2 mt-6">
+                        <div className="flex justify-end gap-2">
                             <button
                                 type="button"
                                 onClick={onClose}
-                                className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+                                className="px-3 py-1 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded hover:bg-gray-300 dark:hover:bg-gray-500"
                             >
                                 Cancel
                             </button>
                             <button
                                 type="submit"
-                                className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-md transition-colors"
+                                className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
                             >
                                 {isRename ? 'Rename' : 'Create'}
                             </button>
@@ -551,34 +552,33 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
     };
 
     return (
-        <div className="flex flex-col h-full bg-white border-r border-gray-200">
-            <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-200">
-                <h3 className="text-sm font-medium text-gray-700">Explorer</h3>
-                <div className="flex items-center gap-1">
+        <div className="h-full bg-gray-100 dark:bg-gray-900">
+            <div className="flex items-center justify-between p-2 border-b border-gray-200 dark:border-gray-700">
+                <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Explorer</h2>
+                <div className="flex items-center gap-2">
                     <button
                         onClick={() => {
                             setModalType('createFile');
                             setModalData({});
                         }}
-                        className="p-1 hover:bg-gray-200 rounded"
+                        className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded"
                         title="New File"
                     >
-                        <FilePlus className="w-4 h-4 text-gray-600"/>
+                        <FilePlus className="w-4 h-4 text-gray-600 dark:text-gray-300"/>
                     </button>
                     <button
                         onClick={() => {
                             setModalType('createFolder');
                             setModalData({});
                         }}
-                        className="p-1 hover:bg-gray-200 rounded"
+                        className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded"
                         title="New Folder"
                     >
-                        <FolderPlus className="w-4 h-4 text-gray-600"/>
+                        <FolderPlus className="w-4 h-4 text-gray-600 dark:text-gray-300"/>
                     </button>
                 </div>
             </div>
-
-            <div className="flex-1 overflow-y-auto">
+            <div className="p-2">
                 {folders
                     .filter(f => !f.parentId)
                     .map(folder => renderTreeItem(folder, 0))}
@@ -586,7 +586,6 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
                     .filter(f => !f.parentId)
                     .map(file => renderTreeItem(file, 0))}
             </div>
-
             <FileFolderModal
                 type={modalType}
                 onClose={() => setModalType(null)}
@@ -631,50 +630,48 @@ const SaveDialog: React.FC<SaveDialogProps> = ({isOpen, onClose, onSave, isLoadi
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-96 max-w-full mx-4">
-                <h3 className="text-lg font-semibold mb-4">Save Project</h3>
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-md">
+                <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Save Project</h2>
                 <div className="space-y-3">
                     <button
                         onClick={() => onSave('zip')}
                         disabled={isLoading}
-                        className="w-full flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+                        className="w-full flex items-center gap-3 p-3 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
                     >
-                        <Download className="w-5 h-5 text-blue-600"/>
+                        <Download className="w-5 h-5 text-gray-600 dark:text-gray-300"/>
                         <div className="text-left">
-                            <div className="font-medium">Download as ZIP</div>
-                            <div className="text-sm text-gray-500">Save all files to your computer</div>
+                            <div className="text-gray-800 dark:text-gray-200 font-medium">Download as ZIP</div>
+                            <div className="text-sm text-gray-600 dark:text-gray-400">Save all files to your computer
+                            </div>
                         </div>
                     </button>
-
                     <button
                         onClick={() => onSave('github')}
                         disabled={isLoading}
-                        className="w-full flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+                        className="w-full flex items-center gap-3 p-3 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
                     >
-                        <Github className="w-5 h-5 text-gray-800"/>
+                        <Github className="w-5 h-5 text-gray-600 dark:text-gray-300"/>
                         <div className="text-left">
-                            <div className="font-medium">Push to GitHub</div>
-                            <div className="text-sm text-gray-500">Save to connected repository</div>
+                            <div className="text-gray-800 dark:text-gray-200 font-medium">Push to GitHub</div>
+                            <div className="text-sm text-gray-600 dark:text-gray-400">Save to connected repository</div>
                         </div>
                     </button>
-
                     <button
                         onClick={() => onSave('database')}
                         disabled={isLoading}
-                        className="w-full flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+                        className="w-full flex items-center gap-3 p-3 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
                     >
-                        <Database className="w-5 h-5 text-green-600"/>
+                        <Database className="w-5 h-5 text-gray-600 dark:text-gray-300"/>
                         <div className="text-left">
-                            <div className="font-medium">Save to Cloud</div>
-                            <div className="text-sm text-gray-500">Store in your account</div>
+                            <div className="text-gray-800 dark:text-gray-200 font-medium">Save to Cloud</div>
+                            <div className="text-sm text-gray-600 dark:text-gray-400">Store in your account</div>
                         </div>
                     </button>
                 </div>
-
-                <div className="flex justify-end gap-2 mt-6">
+                <div className="mt-4 flex justify-end">
                     <button
                         onClick={onClose}
-                        className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+                        className="px-3 py-1 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded hover:bg-gray-300 dark:hover:bg-gray-500"
                     >
                         Cancel
                     </button>
@@ -721,7 +718,6 @@ const AdvancedCodeEditor: React.FC = () => {
         ],
         folders: []
     });
-
     const [activeFileId, setActiveFileId] = useState<string>('html-main');
     const [openFileIds, setOpenFileIds] = useState<string[]>(['html-main', 'css-main', 'js-main']);
     const [viewMode, setViewMode] = useState<ViewMode>('desktop');
@@ -807,9 +803,12 @@ const AdvancedCodeEditor: React.FC = () => {
         if (!file) return;
 
         toast((t) => (
-            <div className="flex items-center gap-2">
-                <span>Delete {file.name}?</span>
-                <div className="flex gap-2">
+            <div>
+                <div className="flex items-center gap-2 mb-3">
+                    <AlertTriangle className="w-5 h-5 text-yellow-500"/>
+                    <span className="text-gray-800 dark:text-gray-200">Delete {file.name}?</span>
+                </div>
+                <div className="flex justify-end gap-2">
                     <button
                         onClick={() => {
                             setProject(prev => ({
@@ -835,7 +834,7 @@ const AdvancedCodeEditor: React.FC = () => {
                     </button>
                     <button
                         onClick={() => toast.dismiss(t.id)}
-                        className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300"
+                        className="px-3 py-1 bg-gray-200 dark:bg-gray-600 rounded hover:bg-gray-300 dark:hover:bg-gray-500"
                     >
                         Cancel
                     </button>
@@ -849,9 +848,13 @@ const AdvancedCodeEditor: React.FC = () => {
         if (!folder) return;
 
         toast((t) => (
-            <div className="flex items-center gap-2">
-                <span>Delete folder {folder.name} and all its contents?</span>
-                <div className="flex gap-2">
+            <div>
+                <div className="flex items-center gap-2 mb-3">
+                    <AlertTriangle className="w-5 h-5 text-yellow-500"/>
+                    <span
+                        className="text-gray-800 dark:text-gray-200">Delete folder {folder.name} and all its contents?</span>
+                </div>
+                <div className="flex justify-end gap-2">
                     <button
                         onClick={() => {
                             setProject(prev => ({
@@ -869,7 +872,7 @@ const AdvancedCodeEditor: React.FC = () => {
                     </button>
                     <button
                         onClick={() => toast.dismiss(t.id)}
-                        className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300"
+                        className="px-3 py-1 bg-gray-200 dark:bg-gray-600 rounded hover:bg-gray-300 dark:hover:bg-gray-500"
                     >
                         Cancel
                     </button>
@@ -930,20 +933,14 @@ const AdvancedCodeEditor: React.FC = () => {
             switch (method) {
                 case 'zip':
                     const zip = new JSZip();
-
-                    // Add all files to the ZIP
                     project.files.forEach(file => {
                         const filePath = file.path.startsWith('/') ? file.path.slice(1) : file.path;
                         zip.file(filePath, file.content);
                     });
-
-                    // Add folders to the ZIP
                     project.folders.forEach(folder => {
                         const folderPath = folder.path.startsWith('/') ? folder.path.slice(1) : folder.path;
                         zip.folder(folderPath);
                     });
-
-                    // Generate ZIP and trigger download
                     const content = await zip.generateAsync({type: 'blob'});
                     const url = URL.createObjectURL(content);
                     const link = document.createElement('a');
@@ -957,14 +954,12 @@ const AdvancedCodeEditor: React.FC = () => {
                     break;
 
                 case 'github':
-                    // Mock GitHub push
                     await new Promise(resolve => setTimeout(resolve, 1500));
                     console.log('Pushing to GitHub...');
                     toast.success('Project pushed to GitHub');
                     break;
 
                 case 'database':
-                    // Mock database save
                     await new Promise(resolve => setTimeout(resolve, 800));
                     console.log('Saving to database...');
                     toast.success('Project saved to cloud');
@@ -988,21 +983,23 @@ const AdvancedCodeEditor: React.FC = () => {
     const createNewProject = useCallback(() => {
         if (project.isModified) {
             toast((t) => (
-                <div className="flex items-center gap-2">
-                    <span>You have unsaved changes. Save before creating a new project?</span>
-                    <div className="flex gap-2">
+                <div>
+                    <div className="flex items-center gap-2 mb-3">
+                        <AlertTriangle className="w-5 h-5 text-yellow-500"/>
+                        <span className="text-gray-800 dark:text-gray-200">You have unsaved changes. Save before creating a new project?</span>
+                    </div>
+                    <div className="flex justify-end gap-2">
                         <button
                             onClick={() => {
                                 toast.dismiss(t.id);
                                 setShowSaveDialog(true);
                             }}
-                            className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                            className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
                         >
                             Save
                         </button>
                         <button
                             onClick={() => {
-                                // Create new project
                                 setProject({
                                     id: `project-${Date.now()}`,
                                     name: 'New Project',
@@ -1026,7 +1023,7 @@ const AdvancedCodeEditor: React.FC = () => {
                                 toast.dismiss(t.id);
                                 toast.success('New project created');
                             }}
-                            className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300"
+                            className="px-3 py-1 bg-gray-200 dark:bg-gray-600 rounded hover:bg-gray-300 dark:hover:bg-gray-500"
                         >
                             Continue
                         </button>
@@ -1036,7 +1033,6 @@ const AdvancedCodeEditor: React.FC = () => {
             return;
         }
 
-        // Create new project
         setProject({
             id: `project-${Date.now()}`,
             name: 'New Project',
@@ -1067,103 +1063,87 @@ const AdvancedCodeEditor: React.FC = () => {
         const js = getFileContent('javascript');
 
         return `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Preview</title>
-    <style>
-        ${css}
-    </style>
-</head>
-<body>
-    ${html}
-    <script>
-        try {
-            ${js}
-        } catch (error) {
-            console.error('JavaScript Error:', error);
-            document.body.innerHTML += '<div style="color: red; background: #fee; padding: 8px; margin-top: 16px; border-radius: 4px;"><strong>JavaScript Error:</strong> ' + error.message + '</div>';
-        }
-    </script>
-</body>
-</html>
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <style>${css}</style>
+            </head>
+            <body>
+                ${html}
+                <script>${js}</script>
+            </body>
+            </html>
         `.trim();
     }, [getFileContent]);
 
     const activeFile = project.files.find(f => f.id === activeFileId);
 
     return (
-        <div className="h-screen flex flex-col bg-gray-100">
+        <div className={`h-screen flex flex-col`}>
             <Toaster position="top-right"/>
             {/* Header */}
             <header
-                className="flex-shrink-0 flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 shadow-sm">
-                <div className="flex items-center gap-4">
-                    <h1 className="text-lg font-semibold text-gray-800">
+                className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex items-center gap-2">
+                    <h1 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
                         {project.name}
-                        {project.isModified && <span className="ml-2 text-sm text-orange-500">• Unsaved</span>}
+                        {project.isModified &&
+                            <span className="text-sm text-gray-500 dark:text-gray-400"> • Unsaved</span>}
                     </h1>
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={createNewProject}
-                            className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
-                        >
-                            New Project
-                        </button>
-                        <button
-                            onClick={() => setShowExplorer(!showExplorer)}
-                            className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
-                        >
-                            {showExplorer ? 'Hide' : 'Show'} Explorer
-                        </button>
-                    </div>
+                    <button
+                        onClick={createNewProject}
+                        className="px-3 py-1 text-sm bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                    >
+                        New Project
+                    </button>
+                    <button
+                        onClick={() => setShowExplorer(!showExplorer)}
+                        className="px-3 py-1 text-sm bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                    >
+                        {showExplorer ? 'Hide' : 'Show'} Explorer
+                    </button>
                 </div>
-
                 <div className="flex items-center gap-2">
                     <button
                         onClick={() => setViewMode(viewMode === 'desktop' ? 'mobile' : 'desktop')}
-                        className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors"
+                        className="p-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
                         title={`Switch to ${viewMode === 'desktop' ? 'mobile' : 'desktop'} preview`}
                     >
-                        {viewMode === 'desktop' ? <Smartphone className="w-5 h-5"/> : <Monitor className="w-5 h-5"/>}
+                        {viewMode === 'desktop' ? <Monitor className="w-5 h-5"/> : <Smartphone className="w-5 h-5"/>}
                     </button>
-
                     <button
                         onClick={() => setShowPreview(!showPreview)}
                         className={`p-2 rounded-md transition-colors ${
                             showPreview
-                                ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
-                                : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+                                ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800'
+                                : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700'
                         }`}
                         title="Toggle preview"
                     >
                         <Play className="w-5 h-5"/>
                     </button>
-
                     <button
                         onClick={() => setShowSaveDialog(true)}
                         className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-md transition-colors flex items-center gap-2"
                     >
-                        <Save className="w-4 h-4"/>
+                        <Save className="w-5 h-5"/>
                         Save
                     </button>
-
                     <button
-                        className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors"
-                        title="Settings"
-                    >
+                        className="p-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors">
                         <Settings className="w-5 h-5"/>
                     </button>
                 </div>
             </header>
 
             {/* Main Content */}
-            <div className="flex-1 flex overflow-hidden">
+            <main className="flex-1 flex overflow-hidden bg-gray-100 dark:bg-gray-900">
                 {/* File Explorer */}
                 {showExplorer && (
-                    <div className="flex-shrink-0 w-64 bg-white border-r border-gray-200">
+                    <div
+                        className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex-shrink-0">
                         <FileExplorer
                             files={project.files}
                             folders={project.folders}
@@ -1186,31 +1166,30 @@ const AdvancedCodeEditor: React.FC = () => {
                 )}
 
                 {/* Editor and Preview */}
-                <div className="flex-1 flex">
+                <div className="flex-1 flex overflow-hidden">
                     {/* Code Editor */}
-                    <div
-                        className={`${showPreview ? 'w-1/2' : 'w-full'} flex flex-col bg-white border-r border-gray-200`}>
+                    <div className={`flex-1 flex flex-col ${showPreview ? 'w-1/2' : 'w-full'}`}>
                         {/* Tab Bar */}
-                        <div
-                            className="flex-shrink-0 flex items-center bg-gray-50 border-b border-gray-200 overflow-x-auto">
+                        <div className="flex border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
                             {project.files.filter(file => openFileIds.includes(file.id)).map(file => (
-                                <button
+                                <div
                                     key={file.id}
                                     onClick={() => setActiveFileId(file.id)}
-                                    className={`flex items-center gap-2 px-4 py-2 text-sm border-r border-gray-200 whitespace-nowrap group ${
+                                    className={`flex items-center gap-2 px-4 py-2 text-sm border-r border-gray-200 dark:border-gray-700 whitespace-nowrap group ${
                                         file.id === activeFileId
-                                            ? 'bg-white text-blue-700 border-b-2 border-blue-500'
-                                            : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+                                            ? 'bg-white dark:bg-gray-800 text-blue-700 dark:text-blue-300 border-b-2 border-blue-500'
+                                            : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700'
                                     }`}
                                 >
-                                    {file.name}
-                                    {file.isModified && <span className="text-orange-500">•</span>}
-                                    <span
+                                    <span>{file.name}</span>
+                                    {file.isModified &&
+                                        <span className="text-xs text-gray-500 dark:text-gray-400">•</span>}
+                                    <button
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             closeFileTab(file.id);
                                         }}
-                                        className="ml-1 p-1 hover:bg-gray-200 rounded opacity-0 group-hover:opacity-100"
+                                        className="ml-1 p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded opacity-0 group-hover:opacity-100"
                                         title="Close file"
                                         role="button"
                                         tabIndex={0}
@@ -1221,14 +1200,13 @@ const AdvancedCodeEditor: React.FC = () => {
                                             }
                                         }}
                                     >
-                                        <X className="w-3 h-3"/>
-                                    </span>
-                                </button>
+                                        <X className="w-3 h-3 text-gray-600 dark:text-gray-300"/>
+                                    </button>
+                                </div>
                             ))}
                         </div>
-
                         {/* Editor */}
-                        <div className="flex-1">
+                        <div className="flex-1 bg-white dark:bg-gray-800">
                             {activeFile ? (
                                 <MonacoEditor
                                     value={activeFile.content}
@@ -1236,76 +1214,68 @@ const AdvancedCodeEditor: React.FC = () => {
                                     onChange={(content) => updateFileContent(activeFile.id, content)}
                                 />
                             ) : (
-                                <div className="flex items-center justify-center h-full text-gray-500">
-                                    <div className="text-center">
-                                        <Code className="w-12 h-12 mx-auto mb-4 text-gray-300"/>
-                                        <p>No file selected</p>
+                                <div className="flex items-center justify-center h-full bg-white dark:bg-gray-800">
+                                    <div className="text-center text-gray-600 dark:text-gray-300">
+                                        <Code className="w-12 h-12 mx-auto mb-2 text-gray-400 dark:text-gray-500"/>
+                                        <p className="text-lg font-semibold">No file selected</p>
                                         <p className="text-sm">Select a file from the explorer to start editing</p>
                                     </div>
                                 </div>
                             )}
                         </div>
                     </div>
-
                     {/* Preview Panel */}
                     {showPreview && (
-                        <div className="w-1/2 flex flex-col bg-white">
+                        <div
+                            className="w-1/2 border-l border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col">
                             <div
-                                className="flex-shrink-0 flex items-center justify-between px-4 py-2 bg-gray-50 border-b border-gray-200">
-                                <h3 className="text-sm font-medium text-gray-700">Preview</h3>
+                                className="flex items-center justify-between p-2 border-b border-gray-200 dark:border-gray-700">
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Preview</h3>
                                 <div className="flex items-center gap-2">
-                                    <span className="text-xs text-gray-500">
+                                    <span className="text-xs text-gray-600 dark:text-gray-400">
                                         {viewMode === 'desktop' ? 'Desktop' : 'Mobile'} View
                                     </span>
                                     <button
                                         onClick={() => setViewMode(viewMode === 'desktop' ? 'mobile' : 'desktop')}
-                                        className="p-1 hover:bg-gray-200 rounded"
+                                        className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded"
                                         title={`Switch to ${viewMode === 'desktop' ? 'mobile' : 'desktop'} view`}
                                     >
-                                        {viewMode === 'desktop' ? <Smartphone className="w-4 h-4"/> :
-                                            <Monitor className="w-4 h-4"/>}
+                                        {viewMode === 'desktop' ? (
+                                            <Monitor className="w-4 h-4 text-gray-600 dark:text-gray-300"/>
+                                        ) : (
+                                            <Smartphone className="w-4 h-4 text-gray-600 dark:text-gray-300"/>
+                                        )}
                                     </button>
                                 </div>
                             </div>
-
-                            <div className="flex-1 p-4 bg-gray-100 overflow-auto">
-                                <div className={`mx-auto bg-white shadow-lg rounded-lg overflow-hidden ${
-                                    viewMode === 'mobile' ? 'max-w-sm' : 'w-full'
-                                }`}>
-                                    <iframe
-                                        srcDoc={previewContent}
-                                        className={`w-full border-0 ${
-                                            viewMode === 'mobile' ? 'h-96' : 'h-full min-h-96'
-                                        }`}
-                                        title="Preview"
-                                        sandbox="allow-scripts allow-same-origin"
-                                    />
-                                </div>
+                            <div className="flex-1 overflow-auto">
+                                <iframe
+                                    srcDoc={previewContent}
+                                    className={`w-full h-full border-none ${viewMode === 'mobile' ? 'max-w-sm mx-auto' : ''}`}
+                                    title="Preview"
+                                    sandbox="allow-scripts"
+                                />
                             </div>
                         </div>
                     )}
                 </div>
-            </div>
+            </main>
 
             {/* Status Bar */}
             <footer
-                className="flex-shrink-0 flex items-center justify-between px-4 py-2 bg-gray-100 border-t border-gray-200 text-sm text-gray-600">
-                <div className="flex items-center gap-4">
-                    <span>
-                        {project.files.length} file{project.files.length !== 1 ? 's' : ''}
-                    </span>
+                className="flex items-center justify-between p-2 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-300">
+                <div>
+                    <span>{project.files.length} file{project.files.length !== 1 ? 's' : ''}</span>
                     {activeFile && (
-                        <span>
-                            {activeFile.type.toUpperCase()} • {activeFile.name}
-                        </span>
+                        <span className="ml-4">{activeFile.type.toUpperCase()} • {activeFile.name}</span>
                     )}
                 </div>
                 <div className="flex items-center gap-4">
                     {project.isModified && (
-                        <div className="flex items-center gap-1 text-orange-600">
+                        <span className="flex items-center gap-1 text-yellow-600 dark:text-yellow-400">
                             <AlertTriangle className="w-4 h-4"/>
-                            <span>Unsaved changes</span>
-                        </div>
+                            Unsaved changes
+                        </span>
                     )}
                     <span>Last modified: {project.lastModified.toLocaleTimeString()}</span>
                 </div>

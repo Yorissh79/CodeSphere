@@ -3,7 +3,9 @@ import {z} from 'zod';
 import {toast} from 'react-hot-toast';
 import {useUpdateTaskMutation, type Task, type UpdateTaskInput} from '../../../../services/taskApi'; // Corrected path
 import {useGetAllGroupsQuery} from '../../../../services/groupApi'; // Corrected path
-import {Loader2, X, AlertCircle, Upload} from 'lucide-react'; // Import Upload icon
+import {Loader2, X, AlertCircle, Upload} from 'lucide-react';
+import type {FetchBaseQueryError} from "@reduxjs/toolkit/query"; // Import Upload icon
+import type {SerializedError} from '@reduxjs/toolkit';
 
 // Props interface for the EditTaskModal component
 interface EditTaskModalProps {
@@ -23,13 +25,8 @@ const formUpdateTaskSchema = z.object({
     assignedGroups: z.array(z.string()).min(1, 'At least one group must be assigned').optional(),
     deadline: z.string().datetime('Invalid datetime format').optional(), // Validate as datetime string
     allowLateSubmission: z.boolean().optional(),
-    // Max points must be a non-negative number, parsed from string
-    maxPoints: z.string().refine(val => {
-        const num = parseInt(val, 10);
-        return !isNaN(num) && num >= 0;
-    }, {
-        message: 'Points must be a valid non-negative number',
-    }).optional(),
+    // Max points must be a non-negative number
+    maxPoints: z.number().min(0, 'Points must be a non-negative number').optional(),
     // Attachments are optional and match the structure defined in taskApi.ts
     attachments: z
         .array(
@@ -59,8 +56,8 @@ const EditTaskModal = ({
         // Format deadline to 'YYYY-MM-DDTHH:MM' for datetime-local input
         deadline: taskToEdit.deadline ? taskToEdit.deadline.slice(0, 16) : '',
         allowLateSubmission: taskToEdit.allowLateSubmission,
-        // Convert maxPoints to string as expected by the schema and UpdateTaskInput
-        maxPoints: String(taskToEdit.maxPoints),
+        // Keep maxPoints as number (matching the fixed Task interface)
+        maxPoints: taskToEdit.maxPoints,
         attachments: taskToEdit.attachments, // Include existing attachments
     });
 
@@ -91,7 +88,7 @@ const EditTaskModal = ({
                 assignedGroups: taskToEdit.assignedGroups,
                 deadline: taskToEdit.deadline ? taskToEdit.deadline.slice(0, 16) : '',
                 allowLateSubmission: taskToEdit.allowLateSubmission,
-                maxPoints: String(taskToEdit.maxPoints),
+                maxPoints: taskToEdit.maxPoints, // Now using number directly
                 // Note: We don't populate `attachments` directly from `taskToEdit.attachments`
                 // because new uploads are managed separately in `selectedFiles`.
                 // Existing attachments are kept in `formData.attachments` and new ones will be merged.
@@ -120,10 +117,14 @@ const EditTaskModal = ({
 
     // Generic handler for input field changes
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-        const {name, value, type, checked} = e.target;
+        const {name, value, type} = e.target;
+        const checked = (e.target as HTMLInputElement).checked;
+
         setFormData(prev => ({
             ...prev,
-            [name]: type === 'checkbox' ? checked : value, // Handle checkbox checked state
+            [name]: type === 'checkbox' ? checked :
+                name === 'maxPoints' ? Number(value) || 0 : // Convert maxPoints to number
+                    value,
         }));
     };
 
@@ -219,7 +220,7 @@ const EditTaskModal = ({
             };
 
             // Client-side validation using Zod
-            const validatedData = formUpdateTaskSchema.parse(taskData); // Validate the combined data
+            const validatedData: any = formUpdateTaskSchema.parse(taskData); // Validate the combined data
             // Trigger the RTK Query mutation
             await updateTask(validatedData).unwrap(); // .unwrap() throws an error if the mutation fails
         } catch (err: any) {
@@ -402,10 +403,11 @@ const EditTaskModal = ({
                                     type="number" // Use type="number" for numeric input
                                     name="maxPoints"
                                     id="maxPoints"
-                                    value={formData.maxPoints || ''} // Keep as string for consistency with schema
+                                    value={formData.maxPoints || 0} // Now using number
                                     onChange={handleChange}
                                     className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700/50 rounded-xl text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                                     placeholder="e.g., 100"
+                                    min="0"
                                 />
                                 {formErrors.find(err => err.path[0] === 'maxPoints') && (
                                     <p className="text-rose-500 text-xs mt-1">
