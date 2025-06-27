@@ -45,7 +45,7 @@ const AdminHeader: React.FC = () => {
         <>
             {render ? (
                 <header
-                    className="fixed top-0 left-0 right-0 z-50 bg-white/90 dark:bg-gray-900/90 backdrop-blur-lg shadow-md border-b border-gray-200/30 dark:border-gray-800/30 transition-colors duration-300">
+                    className="top-0 left-0 right-0 z-50 bg-white/90 dark:bg-gray-900/90 backdrop-blur-lg shadow-md border-b border-gray-200/30 dark:border-gray-800/30 transition-colors duration-300">
                     <div className="max-w-7xl mx-auto flex justify-between items-center px-4 sm:px-6 py-4">
                         {/* Admin Branding */}
                         <motion.div
