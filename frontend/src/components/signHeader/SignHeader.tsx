@@ -89,7 +89,7 @@ const SignHeader = () => {
                                         <img
                                             src={logo}
                                             alt="CodeSphere Logo"
-                                            className="relative h-16 w-14 sm:h-10 sm:w-10 shadow-lg"
+                                            className="relative h-11/12 w-16 shadow-lg"
                                         />
                                     </div>
                                     <div className="hidden sm:block">
@@ -97,7 +97,12 @@ const SignHeader = () => {
                                             CodeSphere
                                         </h1>
                                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                                            Teacher Portal
+                                            {window.location.pathname === "/registration/teacher/signup"
+                                                ? "Teacher Portal"
+                                                : (window.location.pathname === "/registration/login" || window.location.pathname === "/registration/signup")
+                                                    ? "Coding Platform"
+                                                    : "CodeSphere"
+                                            }
                                         </p>
                                     </div>
                                 </Link>

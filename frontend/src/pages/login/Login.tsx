@@ -1,26 +1,19 @@
 import {Link, useNavigate} from "react-router-dom";
 import {useState} from "react";
-import {useUserGLoginMutation, useUserGTeacherLoginMutation} from "../../services/googleApi";
+import {useVerifyGoogleTokenMutation} from "../../services/googleApi";
 import {useUserLoginMutation} from "../../services/userApi";
 import image from "../../assets/Codesphere_icon.png";
 import {Eye, EyeOff, Mail, Lock, AlertCircle} from 'lucide-react';
 import {GoogleLogin} from '@react-oauth/google';
-import {jwtDecode} from 'jwt-decode';
 import {useTeacherLoginMutation} from "../../services/teacherApi";
 import {useAdminLoginMutation} from "../../services/adminApi";
-
-interface GoogleCredential {
-    sub: string;
-    email: string;
-}
 
 const Login = () => {
     const navigate = useNavigate();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isTeacher, setIsTeacher] = useState(false);
-    const [userGLogin, {isLoading: userGLoading, error: userGError}] = useUserGLoginMutation();
-    const [teacherGLogin, {isLoading: teacherGLoading, error: teacherGError}] = useUserGTeacherLoginMutation();
+    const [verifyGoogleToken, {isLoading: googleLoading, error: googleError}] = useVerifyGoogleTokenMutation();
     const [showPassword, setShowPassword] = useState(false);
     const [userLogin, {isLoading: userLoading, error: userError}] = useUserLoginMutation();
     const [teacherLogin, {isLoading: teacherLoading, error: teacherError}] = useTeacherLoginMutation();
@@ -47,21 +40,26 @@ const Login = () => {
 
     const handleGoogleLogin = async (credentialResponse: { credential?: string }) => {
         if (credentialResponse.credential) {
-            const decoded: GoogleCredential = jwtDecode(credentialResponse.credential);
             try {
-                await (isTeacher ? teacherGLogin : userGLogin)({
-                    email: decoded.email,
-                    googleId: decoded.sub,
+                const result = await verifyGoogleToken({
+                    idToken: credentialResponse.credential,
                 }).unwrap();
-                navigate(isTeacher ? '/check/teacher' : '/check/student');
+                // Navigate based on user role from the response
+                if (result.user.role === 'admin') {
+                    navigate('/user/admin');
+                } else if (result.user.role === 'teacher') {
+                    navigate('/user/teacher');
+                } else {
+                    navigate('/user/student');
+                }
             } catch (err) {
                 console.error('Google login error:', err);
             }
         }
     };
 
-    const isLoading = userLoading || teacherLoading || userGLoading || teacherGLoading || adminLoading;
-    const hasError = userError || teacherError || adminError || userGError || teacherGError;
+    const isLoading = userLoading || teacherLoading || googleLoading || adminLoading;
+    const hasError = userError || teacherError || adminError || googleError;
 
     // Skeleton loader component
     const SkeletonLoader = () => (
@@ -260,11 +258,10 @@ const Login = () => {
 
                     {/* Google login */}
                     <div className="flex justify-center">
-                        <div className="w-full max-w-xs">
+                        <div className="transform hover:scale-105 transition-transform duration-200 w-full">
                             <GoogleLogin
                                 onSuccess={handleGoogleLogin}
                                 onError={() => console.error('Google Login Failed')}
-                                width="100%"
                                 shape="pill"
                                 theme="outline"
                             />

@@ -2,13 +2,14 @@ import React, {useState, useRef, useCallback, useEffect} from 'react';
 import {X, Upload, Loader2, AlertCircle, FileText, Image, Calendar, Clock, GitBranch, Link} from 'lucide-react';
 import {toast} from 'react-hot-toast';
 import {z} from 'zod';
-import type {StudentTask, Attachment} from '../../../../services/taskApi';
+import type {Attachment} from '../../../../services/taskApi';
 import {useCreateSubmissionMutation} from "../../../../services/submissionsApi.ts";
+import type {StudentTask} from "../components/StudentMainContent";
 
 interface SubmitTaskModalProps {
     showSubmitModal: boolean;
     setShowSubmitModal: (show: boolean) => void;
-    task: Pick<StudentTask, '_id' | 'title' | 'deadline' | 'allowLateSubmission'> | null;
+    task: Pick<StudentTask, '_id' | 'title' | 'deadline' | 'allowLateSubmission'>;
     refetchTasks: () => void;
 }
 

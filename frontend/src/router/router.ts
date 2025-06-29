@@ -61,6 +61,10 @@ export const router = createBrowserRouter([
                 path: "faq",
                 Component: Faq
             },
+            {
+                path: "code-editor",
+                Component: BrowserCodeEditor
+            }
         ]
     },
     {
@@ -194,7 +198,7 @@ export const router = createBrowserRouter([
             {
                 path: "admin",
                 Component: AdminAuth
-            },
+            }
         ]
     },
     {

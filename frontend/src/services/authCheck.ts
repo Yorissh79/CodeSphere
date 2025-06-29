@@ -8,6 +8,9 @@ interface AuthCheckResponse {
         surname: string
         group: string;
         role: string;
+        googleId: string;
+        picture: string;
+        isGoogleUser: boolean;
     }
     teacher: {
         id: string;
@@ -37,7 +40,6 @@ export const authCheck = createApi({
                 url: '/auth/check',
                 method: 'GET',
             }),
-
         }),
         checkTeacherAuth: builder.query<AuthCheckResponse, void>({
             query: () => ({

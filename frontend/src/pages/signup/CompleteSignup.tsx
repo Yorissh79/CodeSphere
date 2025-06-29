@@ -1,7 +1,7 @@
 import image from '../../assets/Codesphere_icon.png';
 import {useState} from 'react';
 import {Link, useNavigate, useLocation} from 'react-router-dom';
-import {useUserCreateMutation} from "../../services/googleApi.ts";
+import {useUserSignupMutation} from "../../services/googleApi.ts";
 import {User, Mail, Users, ArrowRight, CheckCircle} from 'lucide-react';
 
 const CompleteSignup = () => {
@@ -12,7 +12,7 @@ const CompleteSignup = () => {
     const [email, setEmail] = useState(googleEmail || '');
     const [surname, setSurname] = useState('');
     const [group, setGroup] = useState('');
-    const [createPost, {isLoading, error}] = useUserCreateMutation();
+    const [userSignup, {isLoading, error}] = useUserSignupMutation();
 
     // Submit form with Google and additional data
     const completeSignup = async (e: React.FormEvent) => {
@@ -23,7 +23,7 @@ const CompleteSignup = () => {
             return;
         }
         try {
-            await createPost({
+            await userSignup({
                 email,
                 name,
                 surname,

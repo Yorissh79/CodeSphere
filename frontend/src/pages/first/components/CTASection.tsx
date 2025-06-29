@@ -17,7 +17,7 @@ const CTASection: FC = () => {
                           className="px-6 py-3 bg-white text-indigo-600 font-semibold rounded-lg hover:bg-gray-100 transition-all duration-300">
                         Sign Up as Teacher
                     </Link>
-                    <Link to="/editor"
+                    <Link to="/code-editor"
                           className="px-6 py-3 border border-white text-white rounded-lg hover:bg-white/10 transition-all duration-300">
                         Try Code Editor
                     </Link>

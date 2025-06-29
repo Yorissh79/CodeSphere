@@ -1,17 +1,16 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import {createApi, fetchBaseQuery} from '@reduxjs/toolkit/query/react';
 
 export interface User {
+    googleId: User | undefined;
     id: string;
     name: string;
     email: string;
+    role: string;
+    surname?: string;
+    group?: string;
 }
 
-interface RegisterResponse {
-    message: string;
-    user: User;
-}
-
-interface LoginResponse {
+interface AuthResponse {
     message: string;
     user: User;
 }
@@ -26,67 +25,76 @@ interface RegisterRequest {
     group?: string;
 }
 
-interface LoginRequest {
-    email: string;
-    googleId: string;
+interface GoogleTokenRequest {
+    idToken: string;
+}
+
+interface GetAllUsersResponse {
+    users: User[];
 }
 
 export const googleApi = createApi({
     reducerPath: 'googleApi',
     baseQuery: fetchBaseQuery({
-        baseUrl: 'http://localhost:3001/',
+        baseUrl: 'http://localhost:3001/google', // Changed from '/google' to '/auth' to match controller routes
         credentials: 'include', // Include cookies for JWT
     }),
+    tagTypes: ['User'],
     endpoints: (builder) => ({
-        userSignup: builder.mutation<RegisterResponse, RegisterRequest>({
+        // POST /auth/register - Create a new user with optional Google integration
+        userSignup: builder.mutation<AuthResponse, RegisterRequest>({
             query: (data) => ({
                 url: '/register',
                 method: 'POST',
                 body: data,
             }),
+            invalidatesTags: ['User'],
         }),
-        userCreate: builder.mutation<RegisterResponse, RegisterRequest>({
+
+        // POST /auth/google/verify - Verify Google ID token (for client-side integration)
+        verifyGoogleToken: builder.mutation<AuthResponse, GoogleTokenRequest>({
             query: (data) => ({
-                url: '/gUser',
+                url: '/verify',
                 method: 'POST',
                 body: data,
             }),
+            invalidatesTags: ['User'],
         }),
-        userGLogin: builder.mutation<LoginResponse, LoginRequest>({
-            query: (data) => ({
-                url: '/login',
-                method: 'POST',
-                body: data,
-            }),
-        }),
-        userGTeacherLogin: builder.mutation<LoginResponse, LoginRequest>({
-            query: (data) => ({
-                url: '/login',
-                method: 'POST',
-                body: data,
-            }),
-        }),
-        userLogout: builder.mutation<void, void>({
+
+        // POST /auth/logout - Logout user
+        userLogout: builder.mutation<{ message: string }, void>({
             query: () => ({
                 url: '/logout',
                 method: 'POST',
             }),
+            invalidatesTags: ['User'],
         }),
-        getUser: builder.query<User, void>({
+
+        // GET /auth/user - Get current authenticated user
+        getCurrentUser: builder.query<User, void>({
             query: () => '/user',
+            providesTags: ['User'],
         }),
-        getAllUsers: builder.query<User[], void>({
+
+        // GET /auth/users - Get all users (admin only)
+        getAllUsers: builder.query<GetAllUsersResponse, void>({
             query: () => '/users',
+            providesTags: ['User'],
+        }),
+
+        // GET /auth/protected - Example protected route
+        getProtectedData: builder.query<{ message: string; user: User }, void>({
+            query: () => '/protected',
+            providesTags: ['User'],
         }),
     }),
 });
 
 export const {
     useUserSignupMutation,
-    useUserCreateMutation,
-    useUserGLoginMutation,
-    useUserGTeacherLoginMutation,
+    useVerifyGoogleTokenMutation,
     useUserLogoutMutation,
-    useGetUserQuery,
+    useGetCurrentUserQuery,
     useGetAllUsersQuery,
+    useGetProtectedDataQuery,
 } = googleApi;

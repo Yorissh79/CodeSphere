@@ -36,16 +36,23 @@ const SignupTeacher = () => {
                 <div className="text-center mb-8">
                     <div className="relative mb-6">
                         <div
-                            className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-teal-600 rounded-full blur-2xl opacity-20 animate-pulse"></div>
-                        <div className="relative">
-                            <img
-                                alt="Codesphere"
-                                src={image}
-                                className="mx-auto h-20 w-20 rounded-2xl shadow-2xl border-2 border-white/20 backdrop-blur-sm"
-                            />
-                            <div
-                                className="absolute -top-2 -right-2 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full p-2 shadow-lg">
-                                <GraduationCap size={16} className="text-white"/>
+                            className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-teal-600 rounded-full blur-2xl opacity-20 animate-pulse">
+                        </div>
+                        <div className="relative mb-6 flex justify-center">
+                            <div className="group relative">
+                                {/* Outer glow */}
+                                <div
+                                    className="absolute -inset-4 bg-gradient-to-r from-emerald-600 to-teal-600 to-cyan-400 rounded-full opacity-20 blur-2xl group-hover:opacity-40 transition-all duration-700 animate-pulse"></div>
+
+                                {/* Main container */}
+                                <div
+                                    className="relative bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-8 shadow-2xl group-hover:shadow-purple-500/25 transition-all duration-500 group-hover:scale-105">
+                                    <img
+                                        alt="CodeSphere"
+                                        src={image}
+                                        className="h-24 w-24 object-contain filter drop-shadow-2xl group-hover:drop-shadow-[0_0_30px_rgba(139,92,246,0.7)] transition-all duration-500"
+                                    />
+                                </div>
                             </div>
                         </div>
                     </div>

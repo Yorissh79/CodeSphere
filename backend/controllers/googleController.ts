@@ -1,193 +1,254 @@
-import { Router, Request, Response } from 'express';
-import { z } from 'zod';
+// src/controllers/authController.ts
+import { Request, Response, NextFunction } from 'express';
+import { OAuth2Client } from 'google-auth-library';
 import bcrypt from 'bcrypt';
-import passport from '../controllers/googleAuth';
-import userModel, {IUser} from "../models/userModel";
-import {generateToken} from "../utils/generateTokenGoogle";
-import {OAuth2Client} from "google-auth-library";
+import passport from '../config/passport'; // Correct path to Passport config
+import userModel, { IUser } from '../models/userModel';
+import { generateToken } from '../utils/generateTokenGoogle';
+import { registerSchema, googleTokenSchema } from '../middleware/authValidation';
+import { handleControllerError } from '../utils/errorHandler';
+import env from '../config/env';
 
-const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const client = new OAuth2Client(env.GOOGLE_CLIENT_ID);
 
-const registerSchema = z.object({
-    name: z.string(),
-    email: z.string().email(),
-    password: z.string().min(6).optional(),
-    googleId: z.string().optional(),
-    role: z.string().default('user'),
-    surname: z.string().optional(),
-    group: z.string().optional(),
-});
-
-const loginSchema = z.object({
-    email: z.string().email(),
-    googleId: z.string()
-});
-
-const googleUserSchema = z.object({
-    name: z.string(),
-    email: z.string().email(),
-    googleId: z.string(),
-    role: z.string().default('user'),
-    surname: z.string().optional(),
-    group: z.string().optional(),
-});
-
-export const createGoogle = async (req: Request, res: Response): Promise<any> => {
-    const result = googleUserSchema.safeParse(req.body);
-    if (!result.success) {
-        return res.status(400).json({error: result.error});
-    }
-
-    const {name, email, googleId, role, surname, group} = result.data;
-
-    const existingUser = await userModel.findOne({email}) as IUser | null;
-    if (existingUser) {
-        return res.status(400).json({error: 'User already exists'});
-    }
-
-    const newUser = await userModel.create({
-        name,
-        email,
-        googleId,
-        role,
-        surname,
-        group,
-    }) as IUser;
-
-    generateToken(res, newUser._id.toString());
-
-    res.status(201).json({
-        message: 'Google user created successfully',
-        user: {
-            id: newUser._id,
-            name: newUser.name,
-            email: newUser.email,
-        },
-    });
+interface CustomAuthRequest {
+    user?: IUser;
+    body: any;
+    params: any;
+    query: any;
+    session: any;
+    logout?: (callback: (err: any) => void) => void;
 }
 
-// POST /register - Create a new user (existing)
-export const registerGoogle = (async (req: Request, res: Response):Promise<any> => {
-    const result = registerSchema.safeParse(req.body);
-    if (!result.success) {
-        return res.status(400).json({ error: result.error });
-    }
-
-    const { name, email, password, googleId, role, surname, group } = result.data;
-
-    const existingUser = await userModel.findOne({ email }) as IUser | null;
-    if (existingUser) {
-        return res.status(400).json({ error: 'User already exists' });
-    }
-
-    const userData: Partial<IUser> = { name, email, role, surname, group };
-    if (password) {
-        userData.password = await bcrypt.hash(password, 6);
-    }
-    if (googleId) {
-        userData.googleId = googleId;
-    }
-
-    const newUser = await userModel.create(userData) as IUser;
-
-    generateToken(res, newUser._id.toString());
-
-    res.status(201).json({
-        message: 'User created successfully',
-        user: {
-            id: newUser._id,
-            name: newUser.name,
-            email: newUser.email,
-        },
-    });
-});
-
-// POST /login - Login user (existing)
-export const loginGoogle = async (req: Request, res: Response): Promise<any> => {
-    const result = loginSchema.safeParse(req.body);
-    if (!result.success) {
-        return res.status(400).json({ error: result.error });
-    }
-
-    const { email, googleId } = result.data;
-
+// POST /auth/google/verify - Verify Google ID token (for client-side integration)
+export const verifyGoogleToken = async (req: Request, res: Response): Promise<any> => {
     try {
-        const ticket = await client.verifyIdToken({
-            idToken: googleId,
-            audience: process.env.GOOGLE_CLIENT_ID,
-        });
-        const payload = ticket.getPayload();
-        console.log(payload);
-        if (!payload || payload.email !== email) {
-            return res.status(400).json({ error: 'Invalid Google token' });
+        const result = googleTokenSchema.safeParse(req.body);
+        if (!result.success) {
+            return res.status(400).json({
+                error: "Invalid request data",
+                details: result.error.errors
+            });
         }
-    } catch (err) {
-        return res.status(400).json({ error: 'Google token verification failed' });
+
+        const { idToken } = result.data;
+
+        // Verify the ID token
+        const ticket = await client.verifyIdToken({
+            idToken,
+            audience: env.GOOGLE_CLIENT_ID,
+        });
+
+        const payload = ticket.getPayload();
+        if (!payload || !payload.email || !payload.sub) {
+            return res.status(400).json({ error: 'Invalid token payload' });
+        }
+
+        const { email, name, sub: googleId } = payload;
+
+        // Find or create user
+        let user = await userModel.findOne({
+            $or: [{ email }, { googleId }]
+        }) as IUser | null;
+
+        if (!user) {
+            user = await userModel.create({
+                name: name || 'Google User',
+                email,
+                googleId,
+                role: 'user',
+            }) as IUser;
+        } else if (!user.googleId) {
+            // Update existing user with Google ID if it's missing
+            user.googleId = googleId;
+            await user.save();
+        }
+
+        generateToken(res, user._id.toString());
+
+        res.status(200).json({
+            message: 'Authentication successful',
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+            },
+        });
+
+    } catch (error: any) {
+        if (error.message.includes('Token used too late') || error.message.includes('Invalid token')) {
+            return res.status(401).json({ error: 'Invalid or expired Google token' });
+        }
+        return handleControllerError(res, error, 'Google token verification failed');
     }
+};
 
-    const user = await userModel.findOne({ $or: [{ email }, { googleId }] }) as IUser | null;
-    if (!user) {
-        return res.status(401).json({ error: 'User not found' });
+// POST /auth/register - Create a new user with optional Google integration
+export const registerUser = async (req: Request, res: Response): Promise<any> => {
+    try {
+        const result = registerSchema.safeParse(req.body);
+        if (!result.success) {
+            return res.status(400).json({
+                error: "Invalid request data",
+                details: result.error.errors
+            });
+        }
+
+        const { name, email, password, googleId, role, surname, group } = result.data;
+
+        // Check if user already exists
+        const existingUser = await userModel.findOne({
+            $or: [{ email }, ...(googleId ? [{ googleId }] : [])]
+        }) as IUser | null;
+
+        if (existingUser) {
+            return res.status(409).json({ error: 'User already exists with this email or Google account' });
+        }
+
+        // Prepare user data
+        const userData: Partial<IUser> = {
+            name,
+            email,
+            role,
+            surname,
+            group
+        };
+
+        if (password) {
+            userData.password = await bcrypt.hash(password, 12); // Increased salt rounds for better security
+        }
+
+        if (googleId) {
+            userData.googleId = googleId;
+        }
+
+        const newUser = await userModel.create(userData) as IUser;
+        generateToken(res, newUser._id.toString());
+
+        res.status(201).json({
+            message: 'User created successfully',
+            user: {
+                id: newUser._id,
+                name: newUser.name,
+                email: newUser.email,
+                role: newUser.role,
+            },
+        });
+
+    } catch (error) {
+        return handleControllerError(res, error, 'User registration failed');
     }
+};
 
-    generateToken(res, user._id.toString());
+// POST /auth/logout - Logout user
+export const logoutUser = async (req: CustomAuthRequest, res: Response): Promise<void> => {
+    try {
+        // Clear session if Passport is used
+        if (req.logout) {
+            req.logout((err) => {
+                if (err) {
+                    console.error('Passport logout error:', err);
+                }
+            });
+            req.session = null; // Clear session data for express-session
+        }
 
-    res.status(200).json({
-        message: 'Logged in successfully',
-        user: {
+        // Clear JWT cookie
+        res.cookie('jwt', '', {
+            httpOnly: true,
+            secure: env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            expires: new Date(0), // Expire immediately
+            path: '/'
+        });
+
+        res.status(200).json({ message: 'Logged out successfully' });
+    } catch (error) {
+        console.error('Logout error:', error);
+        res.status(500).json({ error: 'Logout failed' });
+    }
+};
+
+// GET /auth/user - Get current authenticated user
+export const getCurrentUser = async (req: CustomAuthRequest, res: Response): Promise<any> => {
+    try {
+        if (!req.user) {
+            return res.status(401).json({ error: 'Not authenticated' });
+        }
+
+        const user = req.user;
+        return res.status(200).json({
             id: user._id,
             name: user.name,
             email: user.email,
-        },
-    });
+            role: user.role,
+            surname: user.surname,
+            group: user.group
+        });
+    } catch (error) {
+        return handleControllerError(res, error, 'Failed to get current user');
+    }
 };
 
-// POST /logout - Logout user (existing)
-export const logoutGoogle = (async (req: Request, res: Response) => {
-    req.logout(() => {
-        res.cookie('jwt', '', {
-            httpOnly: true,
-            expires: new Date(0),
-        });
-        res.status(200).json({ message: 'Logged out' });
-    });
-});
+// GET /auth/users - Get all users (admin only)
+export const getAllUsers = async (req: CustomAuthRequest, res: Response): Promise<any> => {
+    try {
+        // Middleware `requireAdmin` should already handle access control, but double-check for robustness.
+        if (!req.user || req.user.role !== 'admin') {
+            return res.status(403).json({ error: 'Admin access required' });
+        }
 
-// GET /user - Get current user (existing)
-export const getGoogle = (async (req: Request, res: Response) => {
-    if (req.isAuthenticated()) {
-        const { name, email, _id } = req.user as unknown as IUser;
-        return res.status(200).json({ id: _id, name, email });
+        const users = await userModel.find().select('-password -googleId'); // Exclude sensitive fields
+        res.status(200).json({ users });
+    } catch (error) {
+        return handleControllerError(res, error, 'Failed to fetch users');
     }
-    res.status(401).json({ error: 'Unauthorized' });
+};
+
+// GET /auth/google - Initiate Google OAuth flow
+export const initiateGoogleAuth = passport.authenticate('google', {
+    scope: ['profile', 'email'],
+    prompt: 'select_account' // Force account selection
 });
 
-// GET /users - Get all users (existing)
-export const getAllGoogle = (async (req: Request, res: Response) => {
-    const users = await userModel.find();
-    res.json(users);
-});
+// GET /auth/google/callback - Handle Google OAuth callback
+export const handleGoogleCallback = [
+    passport.authenticate('google', {
+        failureRedirect: `${env.CLIENT_URL}/login?error=auth_failed`,
+        session: true // Ensure session is used for Passport callback
+    }),
+    (req: CustomAuthRequest, res: Response) => {
+        try {
+            if (req.user) {
+                const user = req.user;
+                generateToken(res, user._id.toString());
 
-// GET /auth/google - Initiate Google Auth
-export const authedGoogle = (passport.authenticate('google', { scope: ['profile', 'email'] }));
-
-// GET /auth/google/callback - Handle Google Auth callback
-export const handleCallback = (
-    passport.authenticate('google', { failureRedirect: '/login' }),
-    (req: Request, res: Response) => {
-        if (req.user) {
-            generateToken(res, (req.user as any)._id.toString());
-            res.redirect('/profile');
-        } else {
-            res.status(401).json({ error: 'Authentication failed' });
+                // Redirect to frontend with success
+                res.redirect(`${env.CLIENT_URL}/dashboard`);
+            } else {
+                res.redirect(`${env.CLIENT_URL}/login?error=no_user`);
+            }
+        } catch (error) {
+            console.error('Google OAuth Callback error:', error);
+            res.redirect(`${env.CLIENT_URL}/login?error=callback_failed`);
         }
     }
-);
+] as const; // Use `as const` to correctly infer tuple type
 
-// GET /profile - Protected route for authenticated user
-export const authGoogle = ((req: Request, res: Response) => {
-    if (!req.isAuthenticated()) {
-        return res.status(401).json({ error: 'Unauthorized' });
+// GET /auth/protected - Example protected route
+export const protectedRoute = (req: CustomAuthRequest, res: Response): any => {
+    if (!req.user) {
+        return res.status(401).json({ error: 'Authentication required' });
     }
-    res.json({ user: req.user });
-});
+
+    res.json({
+        message: 'Access granted to protected route',
+        user: {
+            id: req.user._id,
+            name: req.user.name,
+            email: req.user.email,
+            role: req.user.role,
+        }
+    });
+};

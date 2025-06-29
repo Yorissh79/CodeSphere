@@ -28,11 +28,12 @@ import {
 import { checkAdminAuth } from "../middleware/adminAuthController";
 
 import {
-    authedGoogle,
-    createGoogle,
-    loginGoogle,
-    logoutGoogle,
-    registerGoogle
+    getCurrentUser,
+    handleGoogleCallback,
+    initiateGoogleAuth,
+    logoutUser,
+    registerUser,
+    verifyGoogleToken
 } from "../controllers/googleController";
 
 import {
@@ -92,6 +93,7 @@ import {
     getSubmissionStats
 } from "../controllers/submissionController";
 import { upload } from "../controllers/fileUploadService";
+import {authenticateToken, requireAdmin} from "../middleware/googleAuth";
 
 const router = express.Router();
 
@@ -120,12 +122,16 @@ router.post("/admin/login", loginAdmin);
 router.post("/admin/logout", logoutAdmin);
 router.get("/auth/admin/check", checkAdminAuth);
 
-// Google Auth Routes
-router.post("/gUser", createGoogle);
-router.post("/register", registerGoogle);
-router.post("/login", loginGoogle);
-router.post("/logout", logoutGoogle);
-router.get("/gUser/check", authedGoogle);
+router.get('/google/auth', initiateGoogleAuth);
+router.get('/google/callback', ...handleGoogleCallback as any); // Spread the array of middleware/handlers
+
+router.post('/google/verify', verifyGoogleToken); // For client-side Google ID token verification
+router.post('/google/register', registerUser);
+router.post('/google/logout', logoutUser as any);
+
+// Protected routes using custom JWT middleware
+router.get('/user', authenticateToken as any, getCurrentUser as any);
+router.get('/users', authenticateToken as any, requireAdmin as any, getAllUsers as any); // Admin-only route
 
 // Group Routes
 router.post("/group/create", validTeacherOrAdmin, createGroup);

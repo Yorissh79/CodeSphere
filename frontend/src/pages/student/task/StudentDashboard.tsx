@@ -1,23 +1,24 @@
 import {useState, useMemo, useCallback} from 'react';
 import {Loader2, AlertCircle} from 'lucide-react';
 import {Toaster} from 'react-hot-toast';
-import {useGetAllStudentTasksQuery, type StudentTask} from '../../../services/taskApi';
+import {useGetAllStudentTasksQuery} from '../../../services/taskApi';
 import {useCheckAuthQuery} from "../../../services/authCheck.ts";
 import Header from './components/Header';
 import StudentMainContent from './components/StudentMainContent';
 import SubmitTaskModal from './components/SubmitTaskModal';
 import ViewSubmissionModal from './components/ViewSubmissionModal';
-import ViewTaskDetailsModal from './components/ViewTaskDetailsModal'; // New import
+import ViewTaskDetailsModal from './components/ViewTaskDetailsModal';
 import {useGetAllGroupsQuery} from "../../../services/groupApi.ts";
+import type {StudentTask} from "./components/StudentMainContent";
 
 const StudentDashboard = () => {
     // Modal states - keep these stable
     const [showSubmitModal, setShowSubmitModal] = useState(false);
     const [showViewSubmissionModal, setShowViewSubmissionModal] = useState(false);
-    const [showViewTaskDetailsModal, setShowViewTaskDetailsModal] = useState(false); // New state
+    const [showViewTaskDetailsModal, setShowViewTaskDetailsModal] = useState(false);
     const [taskToSubmit, setTaskToSubmit] = useState<StudentTask | null>(null);
     const [submissionToViewId, setSubmissionToViewId] = useState<string | null>(null);
-    const [taskToViewDetails, setTaskToViewDetails] = useState<StudentTask | null>(null); // New state
+    const [taskIdToViewDetails, setTaskIdToViewDetails] = useState<string | null>(null); // Changed to store taskId
 
     // Filter states
     const [searchQuery, setSearchQuery] = useState('');
@@ -56,7 +57,7 @@ const StudentDashboard = () => {
         {
             studentId: studentId,
             groupIds: studentGroupId ? [studentGroupId] : [],
-            status: filterStatus, // The API query already correctly uses this filter
+            status: filterStatus,
             sortBy: 'deadline',
             sortOrder: 'asc',
         },
@@ -66,13 +67,11 @@ const StudentDashboard = () => {
     const tasks: StudentTask[] = tasksData?.tasks || [];
 
     // Memoize filtered tasks to prevent unnecessary re-renders
-    // FIX: Added filterStatus to the dependency array.
-    // The list now correctly re-filters when the status dropdown changes.
     const filteredAndSearchedTasks = useMemo(() =>
         tasks.filter(task =>
             task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
             task.description.toLowerCase().includes(searchQuery.toLowerCase())
-        ), [tasks, searchQuery, filterStatus] // Added filterStatus here
+        ), [tasks, searchQuery, filterStatus]
     );
 
     // Use useCallback to prevent function recreation on every render
@@ -86,9 +85,9 @@ const StudentDashboard = () => {
         setShowViewSubmissionModal(true);
     }, []);
 
-    // New callback for opening task details modal
+    // Updated callback to store taskId instead of task object
     const handleOpenViewTaskDetailsModal = useCallback((task: StudentTask) => {
-        setTaskToViewDetails(task);
+        setTaskIdToViewDetails(task._id); // Store only the taskId
         setShowViewTaskDetailsModal(true);
     }, []);
 
@@ -149,29 +148,33 @@ const StudentDashboard = () => {
                 setFilterStatus={setFilterStatus}
                 onOpenSubmitModal={handleOpenSubmitModal}
                 onOpenViewSubmissionModal={handleOpenViewSubmissionModal}
-                onOpenViewTaskDetailsModal={handleOpenViewTaskDetailsModal} // New prop
+                onOpenViewTaskDetailsModal={handleOpenViewTaskDetailsModal}
                 isFetching={isFetching}
             />
 
-            {/* Keep modals mounted but conditionally visible */}
-            <SubmitTaskModal
-                showSubmitModal={showSubmitModal}
-                setShowSubmitModal={setShowSubmitModal}
-                task={taskToSubmit}
-                refetchTasks={handleRefetchTasks}
-            />
+            {/* Conditionally render SubmitTaskModal only when taskToSubmit is not null */}
+            {showSubmitModal && taskToSubmit && (
+                <SubmitTaskModal
+                    showSubmitModal={showSubmitModal}
+                    setShowSubmitModal={setShowSubmitModal}
+                    task={taskToSubmit}
+                    refetchTasks={handleRefetchTasks}
+                />
+            )}
 
+
+            {/* Keep modals mounted but conditionally visible */}
             <ViewSubmissionModal
                 showViewSubmissionModal={showViewSubmissionModal}
                 setShowViewSubmissionModal={setShowViewSubmissionModal}
                 submissionId={submissionToViewId || ''}
             />
 
-            {/* New Task Details Modal */}
+            {/* Updated Task Details Modal to pass taskId */}
             <ViewTaskDetailsModal
                 showModal={showViewTaskDetailsModal}
                 setShowModal={setShowViewTaskDetailsModal}
-                task={taskToViewDetails}
+                taskId={taskIdToViewDetails} // Pass taskId instead of task object
             />
         </div>
     );

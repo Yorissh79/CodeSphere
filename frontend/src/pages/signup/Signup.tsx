@@ -291,6 +291,7 @@ const Signup = () => {
                                 text="signup_with"
                                 width="350"
                                 theme="outline"
+                                shape="pill"
                             />
                         </div>
                     </div>

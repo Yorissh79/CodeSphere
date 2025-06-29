@@ -33,10 +33,10 @@ const HeroSection: FC = () => {
                     teachers and students.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                    <button
-                        className="relative px-6 py-3 bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-semibold rounded-lg hover:shadow-lg hover:shadow-indigo-500/25 transition-all duration-300">
+                    <Link to={"/registration/signup"}
+                          className="relative px-6 py-3 bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-semibold rounded-lg hover:shadow-lg hover:shadow-indigo-500/25 transition-all duration-300">
                         Get Started
-                    </button>
+                    </Link>
                     <Link to="/editor"
                           className="px-6 py-3 border border-gray-300 dark:border-gray-700 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-300">
                         Try Code Editor

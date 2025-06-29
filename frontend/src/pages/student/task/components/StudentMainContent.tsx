@@ -1,10 +1,9 @@
 import {FileText, Loader2} from 'lucide-react';
 import StudentTaskCard from './StudentTaskCard';
 import SearchFilterBar from '../../../teacher/task/components/SearchFilterBar';
+import type {Teacher} from "../../../../services/taskApi.ts";
 
-// FIX: Update this interface to match the one expected by StudentTaskCard.
-// This ensures the 'tasks' prop has all the necessary fields.
-interface StudentTask {
+export interface StudentTask {
     _id: string;
     title: string;
     description: string;
@@ -13,6 +12,8 @@ interface StudentTask {
     assignedGroups: string[];
     submissionStatus?: 'submitted' | 'not_submitted' | 'late_submitted';
     submissionId?: string;
+    teacherId?: Teacher | null | undefined;
+    allowLateSubmission?: boolean;
 }
 
 interface StudentMainContentProps {
