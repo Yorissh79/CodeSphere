@@ -1,6 +1,6 @@
 import {createApi, fetchBaseQuery} from '@reduxjs/toolkit/query/react';
 
-interface Quiz {
+export interface Quiz {
     _id: string;
     title: string;
     createdAt?: string;

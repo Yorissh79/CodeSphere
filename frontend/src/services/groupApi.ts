@@ -1,6 +1,6 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import {createApi, fetchBaseQuery} from '@reduxjs/toolkit/query/react';
 
-interface Group {
+export interface Group {
     _id: string;
     teachers: string[];
     group: string;
@@ -55,7 +55,7 @@ export const groupApi = createApi({
             invalidatesTags: ['Group'],
         }),
         updateGroup: builder.mutation<UpdateGroupResponse, UpdateGroupRequest>({
-            query: ({ _id, ...data }) => ({
+            query: ({_id, ...data}) => ({
                 url: `/update/${_id}`,
                 method: 'PUT',
                 headers: {

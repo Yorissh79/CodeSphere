@@ -1,4 +1,4 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import {createApi, fetchBaseQuery} from '@reduxjs/toolkit/query/react';
 
 interface LoginRequest {
     email: string;
@@ -15,7 +15,7 @@ interface LoginResponse {
     };
 }
 
-interface Teacher {
+export interface Teacher {
     _id: string;
     name: string;
     surname: string;
@@ -102,7 +102,7 @@ export const teacherApi = createApi({
             },
         }),
         updateTeacher: builder.mutation<UpdateTeacherResponse, UpdateTeacherRequest>({
-            query: ({ _id, ...data }) => ({
+            query: ({_id, ...data}) => ({
                 url: `update/${_id}`,
                 method: 'PUT',
                 headers: {
@@ -120,4 +120,11 @@ export const teacherApi = createApi({
     }),
 });
 
-export const { useTeacherLoginMutation, useTeacherSignupMutation, useTeacherLogoutMutation, useGetAllTeachersQuery, useUpdateTeacherMutation, useDeleteTeacherMutation } = teacherApi;
+export const {
+    useTeacherLoginMutation,
+    useTeacherSignupMutation,
+    useTeacherLogoutMutation,
+    useGetAllTeachersQuery,
+    useUpdateTeacherMutation,
+    useDeleteTeacherMutation
+} = teacherApi;

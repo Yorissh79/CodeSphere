@@ -10,13 +10,26 @@ export interface SubmissionInput {
     attachments?: Attachment[];
 }
 
-export interface Submission {
+interface Submission {
     _id: string;
     taskId: string | StudentTask; // Can be ObjectId or populated Task object
     studentId: string; // Can be ObjectId or populated User object
     comments?: string;
     attachments: Attachment[]; // Array of attachment objects
     submittedAt: string; // ISO Date String
+    isLate: boolean;
+    points?: number;
+    feedback?: string;
+    status: 'submitted' | 'graded' | 'returned';
+}
+
+export interface Submissions {
+    _id: string;
+    taskId: string | StudentTask;
+    studentId: string | { _id: string; name: string; email: string; [key: string]: any }; // Allow populated user
+    comments?: string;
+    attachments: Attachment[];
+    submittedAt: string;
     isLate: boolean;
     points?: number;
     feedback?: string;

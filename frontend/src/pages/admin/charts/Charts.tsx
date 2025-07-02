@@ -1,24 +1,15 @@
-import React, {useState, useEffect} from 'react';
 import {
     Users,
     GraduationCap,
     BookOpen,
     ClipboardList,
     BarChart3,
-    TrendingUp,
-    Calendar,
     Activity,
-    Settings,
-    Bell,
-    Search,
-    Menu,
+    Menu, // Keep Menu for the burger icon
     X,
-    ChevronDown,
-    Eye,
-    Download,
-    Filter,
     RefreshCw,
-    LucideIcon // Import LucideIcon type
+    AlertCircle,
+    ArrowLeft
 } from 'lucide-react';
 import {
     BarChart,
@@ -32,265 +23,151 @@ import {
     PieChart,
     Pie,
     Cell,
-    LineChart,
-    Line,
-    Area,
-    AreaChart
 } from 'recharts';
+// Corrected import paths for API services
+import {useGetAllUsersQuery} from '../../../services/userApi';
+import {useGetAllTeachersQuery} from '../../../services/teacherApi';
+import {useGetAllGroupsQuery} from '../../../services/groupApi';
+import {useGetAllTasksQuery} from '../../../services/taskApi';
+import {useGetAllQuizzesQuery} from '../../../services/quizApi';
+import {useGetSubmissionsQuery} from '../../../services/submissionsApi'; // Import the new hook
 
-// Type Definitions
-interface Teacher {
-    _id: string;
-    name: string;
-    surname: string;
-    email: string;
-    role: 'teacher';
-}
+import type {User as Student} from '../../../services/userApi';
+import type {Teacher} from '../../../services/teacherApi';
+import type {Group} from '../../../services/groupApi';
+import type {Task} from '../../../services/taskApi'; // Corrected path
+import type {Quiz} from '../../../services/quizApi';
+import type {Submissions} from '../../../services/submissionsApi'; // Import Submission type
+import React, {useMemo, useCallback} from "react";
 
-interface Student {
-    _id: string;
-    name: string;
-    surname: string;
-    email: string;
-    group: string;
-    role: 'student';
-}
-
-interface Group {
-    _id: string;
-    group: string;
-    teachers: string[];
-    date: string;
-}
-
-interface Task {
-    _id: string;
+// --- PROPS INTERFACES ---
+interface StatCardProps {
     title: string;
-    description: string;
-    deadline: string;
-    maxPoints: number;
-    assignedGroups: string[];
+    value: number;
+    icon: React.ComponentType<{ className?: string }>;
+    color?: string;
+    isLoading?: boolean;
 }
 
-interface Quiz {
-    _id: string;
+interface ChartCardProps {
     title: string;
-    timeLimit: number;
-    opened: boolean;
-    groups: string[];
+    children: React.ReactNode;
+    isLoading?: boolean;
 }
 
-interface MockData {
+interface SidebarProps {
+    sidebarOpen: boolean;
+    activeTab: string;
+    setActiveTab: (tab: string) => void;
+    setSidebarOpen: (open: boolean) => void;
+}
+
+// HeaderProps is removed as the Header component will be deleted.
+
+interface OverviewContentProps {
+    error: any;
+    fetchAllData: () => void;
+    isLoading: boolean;
     teachers: Teacher[];
     students: Student[];
-    groups: Group[];
     tasks: Task[];
     quizzes: Quiz[];
+    groupDistribution: any[];
+    taskStatusData: any[];
+    quizStatusData: any[];
 }
 
-// Mock data based on your API structure
-const mockData: MockData = {
-    teachers: [
-        {_id: '1', name: 'John', surname: 'Smith', email: 'john@example.com', role: 'teacher'},
-        {_id: '2', name: 'Sarah', surname: 'Johnson', email: 'sarah@example.com', role: 'teacher'},
-        {_id: '3', name: 'Mike', surname: 'Davis', email: 'mike@example.com', role: 'teacher'}
-    ],
-    students: [
-        {_id: '1', name: 'Alice', surname: 'Brown', email: 'alice@example.com', group: 'Group A', role: 'student'},
-        {_id: '2', name: 'Bob', surname: 'Wilson', email: 'bob@example.com', group: 'Group A', role: 'student'},
-        {_id: '3', name: 'Charlie', surname: 'Taylor', email: 'charlie@example.com', group: 'Group B', role: 'student'},
-        {_id: '4', name: 'Diana', surname: 'Martinez', email: 'diana@example.com', group: 'Group B', role: 'student'},
-        {_id: '5', name: 'Eve', surname: 'Anderson', email: 'eve@example.com', group: 'Group C', role: 'student'}
-    ],
-    groups: [
-        {_id: '1', group: 'Group A', teachers: ['1'], date: '2024-01-15'},
-        {_id: '2', group: 'Group B', teachers: ['2'], date: '2024-01-20'},
-        {_id: '3', group: 'Group C', teachers: ['3'], date: '2024-01-25'}
-    ],
-    tasks: [
-        {
-            _id: '1',
-            title: 'Math Assignment',
-            description: 'Complete exercises 1-10',
-            deadline: '2024-07-15',
-            maxPoints: 100,
-            assignedGroups: ['1', '2']
-        },
-        {
-            _id: '2',
-            title: 'Science Project',
-            description: 'Build a volcano model',
-            deadline: '2024-07-20',
-            maxPoints: 150,
-            assignedGroups: ['1']
-        },
-        {
-            _id: '3',
-            title: 'History Essay',
-            description: 'Write about WWII',
-            deadline: '2024-07-25',
-            maxPoints: 200,
-            assignedGroups: ['2', '3']
-        }
-    ],
-    quizzes: [
-        {_id: '1', title: 'Math Quiz #1', timeLimit: 30, opened: true, groups: ['1']},
-        {_id: '2', title: 'Science Quiz', timeLimit: 45, opened: false, groups: ['1', '2']},
-        {_id: '3', title: 'History Quiz', timeLimit: 60, opened: true, groups: ['2', '3']}
-    ]
-};
+interface StatisticsContentProps {
+    data: any[];
+    isLoading: boolean;
+    title: string;
+}
 
-const COLORS: string[] = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316', '#84cc16'];
+interface TaskStatisticsProps {
+    tasks: Task[];
+    isLoading: boolean;
+    selectedTaskId: string | null;
+    setSelectedTaskId: (id: string | null) => void;
+    submissionsData?: Submissions[];
+    submissionsLoading: boolean;
+    submissionsError: any;
+}
 
-const AdminDashboard = () => {
-    const [isDark, setIsDark] = useState<boolean>(false);
-    const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
-    const [activeTab, setActiveTab] = useState<string>('overview');
-    const [selectedDateRange, setSelectedDateRange] = useState<string>('7d'); // This state is defined but not used in the provided code.
+// --- STATIC & HELPER COMPONENTS ---
+const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316', '#84cc16'];
 
-    useEffect(() => {
-        const theme = localStorage.getItem('theme');
-        setIsDark(theme === 'dark');
-        if (theme === 'dark') {
-            document.documentElement.classList.add('dark');
-        }
-    }, []);
+const LoadingSkeleton: React.FC<{ className?: string }> = ({className = ''}) => (
+    <div className={`animate-pulse bg-gray-200 dark:bg-gray-700 rounded ${className}`}/>
+);
 
-    const toggleTheme = () => {
-        const newTheme = !isDark;
-        setIsDark(newTheme);
-        localStorage.setItem('theme', newTheme ? 'dark' : 'light');
-        document.documentElement.classList.toggle('dark', newTheme);
-    };
-
-    // Data processing for charts
-    interface GroupDistributionData {
-        name: string;
-        students: number;
-        teachers: number;
-    }
-
-    const groupDistribution: GroupDistributionData[] = mockData.groups.map(group => ({
-        name: group.group,
-        students: mockData.students.filter(student => student.group === group.group).length,
-        teachers: group.teachers.length
-    }));
-
-    interface StatusData {
-        name: string;
-        value: number;
-    }
-
-    const taskStatusData: StatusData[] = [
-        {name: 'Active', value: mockData.tasks.filter(task => new Date(task.deadline) > new Date()).length},
-        {name: 'Overdue', value: mockData.tasks.filter(task => new Date(task.deadline) < new Date()).length},
-        {name: 'Completed', value: Math.floor(mockData.tasks.length * 0.6)} // Assuming 60% are completed for mock
-    ];
-
-    const quizStatusData: StatusData[] = [
-        {name: 'Open', value: mockData.quizzes.filter(quiz => quiz.opened).length},
-        {name: 'Closed', value: mockData.quizzes.filter(quiz => !quiz.opened).length}
-    ];
-
-    interface WeeklyActivityData {
-        day: string;
-        tasks: number;
-        quizzes: number;
-        submissions: number;
-    }
-
-    const weeklyActivity: WeeklyActivityData[] = [
-        {day: 'Mon', tasks: 12, quizzes: 8, submissions: 45},
-        {day: 'Tue', tasks: 19, quizzes: 12, submissions: 52},
-        {day: 'Wed', tasks: 8, quizzes: 6, submissions: 38},
-        {day: 'Thu', tasks: 15, quizzes: 10, submissions: 48},
-        {day: 'Fri', tasks: 22, quizzes: 15, submissions: 62},
-        {day: 'Sat', tasks: 5, quizzes: 3, submissions: 28},
-        {day: 'Sun', tasks: 8, quizzes: 4, submissions: 35}
-    ];
-
-    interface StatCardProps {
-        title: string;
-        value: number;
-        icon: LucideIcon; // Use LucideIcon type for the icon component
-        trend?: number; // Optional prop
-        color?: string; // Optional prop
-    }
-
-    const StatCard: React.FC<StatCardProps> = ({title, value, icon: Icon, trend, color = 'blue'}) => (
-        <div
-            className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-all duration-200">
-            <div className="flex items-center justify-between">
-                <div>
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{title}</p>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{value}</p>
-                    {trend !== undefined && ( // Check if trend is provided
-                        <div
-                            className={`flex items-center mt-2 text-sm ${trend > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            <TrendingUp className="w-4 h-4 mr-1"/>
-                            {Math.abs(trend)}% from last week
-                        </div>
-                    )}
-                </div>
-                <div className={`p-3 rounded-full bg-${color}-100 dark:bg-${color}-900/20`}>
-                    <Icon className={`w-6 h-6 text-${color}-600 dark:text-${color}-400`}/>
-                </div>
+const StatCard: React.FC<StatCardProps> = React.memo(({
+                                                          title,
+                                                          value,
+                                                          icon: Icon,
+                                                          color = 'blue',
+                                                          isLoading = false
+                                                      }) => (
+    <div
+        className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-lg transition-all duration-300 hover:scale-105">
+        <div className="flex items-center justify-between">
+            <div className="flex-1">
+                <p className="text-sm font-medium text-gray-600 dark:text-400 mb-1">{title}</p>
+                {isLoading ? <LoadingSkeleton className="h-8 w-16 mb-2"/> :
+                    <p className="text-3xl font-bold text-gray-900 dark:text-white">{value.toLocaleString()}</p>}
+            </div>
+            <div
+                className={`p-3 rounded-full bg-gradient-to-br from-${color}-100 to-${color}-200 dark:from-${color}-900/20 dark:to-${color}-800/20`}>
+                <Icon className={`w-6 h-6 text-${color}-600 dark:text-${color}-400`}/>
             </div>
         </div>
-    );
+    </div>
+));
 
-    interface ChartCardProps {
-        title: string;
-        children: React.ReactNode;
-        actions?: React.ReactNode; // Optional prop
-    }
-
-    const ChartCard: React.FC<ChartCardProps> = ({title, children, actions}) => (
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-            <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{title}</h3>
-                {actions && (
-                    <div className="flex items-center space-x-2">
-                        {actions}
-                    </div>
-                )}
-            </div>
-            {children}
+const ChartCard: React.FC<ChartCardProps> = React.memo(({title, children, isLoading = false}) => (
+    <div
+        className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow duration-200">
+        <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{title}</h3>
         </div>
-    );
+        {isLoading ? <LoadingSkeleton className="h-64 w-full"/> : children}
+    </div>
+));
 
-    const Sidebar = () => (
+// --- CHILD COMPONENTS (MOVED OUTSIDE) ---
+
+const Sidebar: React.FC<SidebarProps> = React.memo(({
+                                                        sidebarOpen,
+                                                        activeTab,
+                                                        setActiveTab,
+                                                        setSidebarOpen,
+                                                    }) => {
+    const navItems = useMemo(() => [
+        {id: 'overview', label: 'Overview', icon: BarChart3},
+        {id: 'teacherStats', label: 'Teacher Statistics', icon: GraduationCap},
+        {id: 'studentStats', label: 'Student Statistics', icon: Users},
+        {id: 'groupStats', label: 'Group Statistics', icon: BookOpen},
+        {id: 'taskStats', label: 'Task Statistics', icon: ClipboardList},
+        {id: 'quizStats', label: 'Quiz Statistics', icon: Activity},
+    ], []);
+
+    return (
         <div
-            className={`fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-900 shadow-xl transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:inset-0`}>
+            className={`fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-900 shadow-xl transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:inset-0 border-r border-gray-200 dark:border-gray-700`}>
             <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200 dark:border-gray-700">
-                <h1 className="text-xl font-bold text-gray-900 dark:text-white">Learning Center</h1>
-                <button
-                    onClick={() => setSidebarOpen(false)}
-                    className="md:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-                >
-                    <X className="w-5 h-5"/>
-                </button>
+                <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Learning
+                    Center</h1>
+                <button onClick={() => setSidebarOpen(false)}
+                        className="md:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                        aria-label="Close sidebar"><X className="w-5 h-5"/></button>
             </div>
-
-            <nav className="mt-6 px-3">
-                {[
-                    {id: 'overview', label: 'Overview', icon: BarChart3},
-                    {id: 'teachers', label: 'Teachers', icon: GraduationCap},
-                    {id: 'students', label: 'Students', icon: Users},
-                    {id: 'groups', label: 'Groups', icon: BookOpen},
-                    {id: 'tasks', label: 'Tasks', icon: ClipboardList},
-                    {id: 'quizzes', label: 'Quizzes', icon: Activity},
-                    {id: 'settings', label: 'Settings', icon: Settings}
-                ].map(item => (
-                    <button
-                        key={item.id}
-                        onClick={() => setActiveTab(item.id)}
-                        className={`w-full flex items-center px-3 py-2 mb-1 rounded-lg text-left transition-colors ${
-                            activeTab === item.id
-                                ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
-                                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
-                        }`}
-                    >
+            <nav className="mt-6 px-3" role="navigation" aria-label="Main navigation">
+                {navItems.map(item => (
+                    <button key={item.id} onClick={() => {
+                        setActiveTab(item.id);
+                        setSidebarOpen(false);
+                    }}
+                            className={`w-full flex items-center px-3 py-2 mb-1 rounded-lg text-left transition-all duration-200 hover:scale-105 ${activeTab === item.id ? 'bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
+                            aria-current={activeTab === item.id ? 'page' : undefined}>
                         <item.icon className="w-5 h-5 mr-3"/>
                         {item.label}
                     </button>
@@ -298,270 +175,437 @@ const AdminDashboard = () => {
             </nav>
         </div>
     );
+});
 
-    const Header = () => (
-        <header className="bg-white dark:bg-gray-900 shadow-sm border-b border-gray-200 dark:border-gray-700">
-            <div className="flex items-center justify-between h-16 px-6">
-                <div className="flex items-center">
-                    <button
-                        onClick={() => setSidebarOpen(true)}
-                        className="md:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-                    >
-                        <Menu className="w-5 h-5"/>
-                    </button>
-                    <div className="ml-4 md:ml-0">
-                        <h2 className="text-xl font-semibold text-gray-900 dark:text-white capitalize">
-                            {activeTab === 'overview' ? 'Dashboard Overview' : activeTab}
-                        </h2>
-                    </div>
-                </div>
+// Header component is removed as requested.
 
-                <div className="flex items-center space-x-4">
-                    <div className="relative hidden md:block">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4"/>
-                        <input
-                            type="text"
-                            placeholder="Search..."
-                            className="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                    </div>
-
-                    <button className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 relative">
-                        <Bell className="w-5 h-5 text-gray-600 dark:text-gray-400"/>
-                        <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-                    </button>
-
-                    <button
-                        onClick={toggleTheme}
-                        className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-                    >
-                        {isDark ? '🌙' : '☀️'}
-                    </button>
-
-                    <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                        <span className="text-white text-sm font-medium">A</span>
-                    </div>
-                </div>
+const OverviewContent: React.FC<OverviewContentProps> = React.memo(({
+                                                                        error,
+                                                                        fetchAllData,
+                                                                        isLoading,
+                                                                        teachers,
+                                                                        students,
+                                                                        tasks,
+                                                                        quizzes,
+                                                                        groupDistribution,
+                                                                        taskStatusData,
+                                                                        quizStatusData
+                                                                    }) => (
+    <div className="space-y-6">
+        {error && (
+            <div
+                className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 flex items-center">
+                <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 mr-3"/>
+                <span className="text-red-700 dark:text-red-300">Failed to load dashboard data. Please try again.</span>
+                <button onClick={fetchAllData}
+                        className="ml-auto text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300">
+                    <RefreshCw className="w-4 h-4"/></button>
             </div>
-        </header>
-    );
+        )}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <StatCard title="Total Teachers" value={teachers.length} icon={GraduationCap} color="blue"
+                      isLoading={isLoading}/>
+            <StatCard title="Total Students" value={students.length} icon={Users} color="green" isLoading={isLoading}/>
+            <StatCard title="Active Tasks" value={tasks.length} icon={ClipboardList} color="orange"
+                      isLoading={isLoading}/>
+            <StatCard title="Total Quizzes" value={quizzes.length} icon={Activity} color="purple"
+                      isLoading={isLoading}/>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <ChartCard title="Student Distribution by Groups" isLoading={isLoading}>
+                <ResponsiveContainer width="100%" height={300}><BarChart data={groupDistribution}><CartesianGrid
+                    strokeDasharray="3 3" className="opacity-30"/><XAxis dataKey="name"/><YAxis/><Tooltip/><Legend/><Bar
+                    dataKey="students" fill="#3b82f6" name="Students"/><Bar dataKey="teachers" fill="#10b981"
+                                                                            name="Teachers"/></BarChart></ResponsiveContainer>
+            </ChartCard>
+            <ChartCard title="Task Status Distribution" isLoading={isLoading}>
+                <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                        <Pie
+                            data={taskStatusData}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            label={({name, percent}) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
+                            outerRadius={80}
+                            fill="#8884d8"
+                            dataKey="value"
+                        >
+                            {taskStatusData.map((_entry, index) => (
+                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]}/>))}
+                        </Pie>
+                        <Tooltip/>
+                    </PieChart>
+                </ResponsiveContainer>
+            </ChartCard>
+            <ChartCard title="Quiz Status" isLoading={isLoading}>
+                <ResponsiveContainer width="100%" height={300}><PieChart><Pie data={quizStatusData} cx="50%" cy="50%"
+                                                                              innerRadius={60} outerRadius={80}
+                                                                              paddingAngle={5}
+                                                                              dataKey="value">{quizStatusData.map((_entry, index) => (
+                    <Cell key={`cell-${index}`}
+                          fill={COLORS[index % COLORS.length]}/>))}</Pie><Tooltip/><Legend/></PieChart></ResponsiveContainer>
+            </ChartCard>
+        </div>
+    </div>
+));
 
-    interface ActivityItem {
-        type: 'task' | 'quiz' | 'student' | 'group';
-        title: string;
-        time: string;
-        user: string;
-    }
+const TeacherStatistics: React.FC<StatisticsContentProps> = React.memo(({data: teachers, isLoading, title}) => (
+    <ChartCard title={title} isLoading={isLoading}>
+        <div className="overflow-x-auto">
+            <table className="w-full table-auto">
+                <thead>
+                <tr className="border-b border-gray-200 dark:border-gray-700">
+                    <th className="text-left py-3 px-4 font-semibold text-gray-900 dark:text-white">Name</th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-900 dark:text-white">Email</th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-900 dark:text-white">Role</th>
+                </tr>
+                </thead>
+                <tbody>{teachers.map((teacher: Teacher) => (<tr key={teacher._id}
+                                                                className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <td className="py-3 px-4 text-gray-900 dark:text-white">{teacher.name} {teacher.surname}</td>
+                    <td className="py-3 px-4 text-gray-600 dark:text-gray-300">{teacher.email}</td>
+                    <td className="py-3 px-4"><span
+                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300">{teacher.role}</span>
+                    </td>
+                </tr>))}</tbody>
+            </table>
+        </div>
+    </ChartCard>
+));
 
-    const OverviewContent = () => (
-        <div className="space-y-6">
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <StatCard
-                    title="Total Teachers"
-                    value={mockData.teachers.length}
-                    icon={GraduationCap}
-                    trend={12}
-                    color="blue"
-                />
-                <StatCard
-                    title="Total Students"
-                    value={mockData.students.length}
-                    icon={Users}
-                    trend={8}
-                    color="green"
-                />
-                <StatCard
-                    title="Active Tasks"
-                    value={mockData.tasks.length}
-                    icon={ClipboardList}
-                    trend={-5}
-                    color="orange"
-                />
-                <StatCard
-                    title="Total Quizzes"
-                    value={mockData.quizzes.length}
-                    icon={Activity}
-                    trend={15}
-                    color="purple"
-                />
-            </div>
+const StudentStatistics: React.FC<StatisticsContentProps> = React.memo(({data: students, isLoading, title}) => (
+    <ChartCard title={title} isLoading={isLoading}>
+        <div className="overflow-x-auto">
+            <table className="w-full table-auto">
+                <thead>
+                <tr className="border-b border-gray-200 dark:border-gray-700">
+                    <th className="text-left py-3 px-4 font-semibold text-gray-900 dark:text-white">Name</th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-900 dark:text-white">Email</th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-900 dark:text-white">Group</th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-900 dark:text-white">Role</th>
+                </tr>
+                </thead>
+                <tbody>{students.map((student: Student) => (<tr key={student._id}
+                                                                className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <td className="py-3 px-4 text-gray-900 dark:text-white">{student.name} {student.surname}</td>
+                    <td className="py-3 px-4 text-gray-600 dark:text-gray-300">{student.email}</td>
+                    <td className="py-3 px-4"><span
+                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300">{student.group}</span>
+                    </td>
+                    <td className="py-3 px-4"><span
+                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300">{student.role}</span>
+                    </td>
+                </tr>))}</tbody>
+            </table>
+        </div>
+    </ChartCard>
+));
 
-            {/* Charts Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <ChartCard
-                    title="Student Distribution by Groups"
-                    actions={
-                        <button className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
-                            <Download className="w-4 h-4"/>
-                        </button>
-                    }
-                >
-                    <ResponsiveContainer width="100%" height={300}>
-                        <BarChart data={groupDistribution}>
-                            <CartesianGrid strokeDasharray="3 3" className="opacity-30"/>
-                            <XAxis dataKey="name"/>
-                            <YAxis/>
-                            <Tooltip/>
-                            <Legend/>
-                            <Bar dataKey="students" fill="#3b82f6" name="Students"/>
-                            <Bar dataKey="teachers" fill="#10b981" name="Teachers"/>
-                        </BarChart>
-                    </ResponsiveContainer>
-                </ChartCard>
-
-                <ChartCard title="Task Status Distribution">
-                    <ResponsiveContainer width="100%" height={300}>
-                        <PieChart>
-                            <Pie
-                                data={taskStatusData}
-                                cx="50%"
-                                cy="50%"
-                                labelLine={false}
-                                label={({name, percent}: {
-                                    name: string,
-                                    percent: number
-                                }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                                outerRadius={80}
-                                fill="#8884d8"
-                                dataKey="value"
-                            >
-                                {taskStatusData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]}/>
-                                ))}
-                            </Pie>
-                            <Tooltip/>
-                        </PieChart>
-                    </ResponsiveContainer>
-                </ChartCard>
-
-                <ChartCard title="Weekly Activity">
-                    <ResponsiveContainer width="100%" height={300}>
-                        <AreaChart data={weeklyActivity}>
-                            <CartesianGrid strokeDasharray="3 3" className="opacity-30"/>
-                            <XAxis dataKey="day"/>
-                            <YAxis/>
-                            <Tooltip/>
-                            <Legend/>
-                            <Area type="monotone" dataKey="submissions" stackId="1" stroke="#3b82f6" fill="#3b82f6"
-                                  fillOpacity={0.6}/>
-                            <Area type="monotone" dataKey="tasks" stackId="1" stroke="#10b981" fill="#10b981"
-                                  fillOpacity={0.6}/>
-                            <Area type="monotone" dataKey="quizzes" stackId="1" stroke="#f59e0b" fill="#f59e0b"
-                                  fillOpacity={0.6}/>
-                        </AreaChart>
-                    </ResponsiveContainer>
-                </ChartCard>
-
-                <ChartCard title="Quiz Status">
-                    <ResponsiveContainer width="100%" height={300}>
-                        <PieChart>
-                            <Pie
-                                data={quizStatusData}
-                                cx="50%"
-                                cy="50%"
-                                innerRadius={60}
-                                outerRadius={80}
-                                paddingAngle={5}
-                                dataKey="value"
-                            >
-                                {quizStatusData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]}/>
-                                ))}
-                            </Pie>
-                            <Tooltip/>
-                            <Legend/>
-                        </PieChart>
-                    </ResponsiveContainer>
-                </ChartCard>
-            </div>
-
-            {/* Recent Activity */}
-            <ChartCard title="Recent Activity">
+const TaskStatistics: React.FC<TaskStatisticsProps> = React.memo(({
+                                                                      tasks,
+                                                                      isLoading,
+                                                                      selectedTaskId,
+                                                                      setSelectedTaskId,
+                                                                      submissionsData,
+                                                                      submissionsLoading,
+                                                                      submissionsError
+                                                                  }) => {
+    return (
+        <ChartCard title="Task Statistics" isLoading={isLoading}>
+            {selectedTaskId ? (
+                // Display Submissions for a selected task
                 <div className="space-y-4">
-                    {[
-                        {
-                            type: 'task',
-                            title: 'New task created: Math Assignment',
-                            time: '2 hours ago',
-                            user: 'John Smith'
-                        },
-                        {
-                            type: 'quiz',
-                            title: 'Quiz completed by 15 students',
-                            time: '4 hours ago',
-                            user: 'Sarah Johnson'
-                        },
-                        {type: 'student', title: 'New student registered', time: '6 hours ago', user: 'Alice Brown'},
-                        {type: 'group', title: 'Group C schedule updated', time: '1 day ago', user: 'Mike Davis'}
-                    ].map((activity: ActivityItem, index: number) => (
-                        <div key={index}
-                             className="flex items-center p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center mr-3 ${
-                                activity.type === 'task' ? 'bg-blue-100 dark:bg-blue-900/20' :
-                                    activity.type === 'quiz' ? 'bg-green-100 dark:bg-green-900/20' :
-                                        activity.type === 'student' ? 'bg-purple-100 dark:bg-purple-900/20' :
-                                            'bg-orange-100 dark:bg-orange-900/20'
-                            }`}>
-                                {activity.type === 'task' &&
-                                    <ClipboardList className="w-4 h-4 text-blue-600 dark:text-blue-400"/>}
-                                {activity.type === 'quiz' &&
-                                    <Activity className="w-4 h-4 text-green-600 dark:text-green-400"/>}
-                                {activity.type === 'student' &&
-                                    <Users className="w-4 h-4 text-purple-600 dark:text-purple-400"/>}
-                                {activity.type === 'group' &&
-                                    <BookOpen className="w-4 h-4 text-orange-600 dark:text-orange-400"/>}
-                            </div>
-                            <div className="flex-1">
-                                <p className="text-sm font-medium text-gray-900 dark:text-white">{activity.title}</p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">{activity.user} • {activity.time}</p>
+                    <button
+                        onClick={() => setSelectedTaskId(null)}
+                        className="flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors mb-4"
+                    >
+                        <ArrowLeft className="w-4 h-4 mr-2"/> Back to Tasks
+                    </button>
+                    <h4 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Submissions for
+                        Task: {tasks.find(t => t._id === selectedTaskId)?.title}</h4>
+                    {submissionsLoading && <LoadingSkeleton className="h-40 w-full"/>}
+                    {submissionsError && (
+                        <div
+                            className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 flex items-center">
+                            <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 mr-3"/>
+                            <span className="text-red-700 dark:text-red-300">Failed to load submissions.</span>
+                        </div>
+                    )}
+                    {submissionsData && submissionsData.length > 0 ? (
+                        <div className="overflow-x-auto">
+                            <table className="w-full table-auto">
+                                <thead>
+                                <tr className="border-b border-gray-200 dark:border-gray-700">
+                                    <th className="text-left py-3 px-4 font-semibold text-gray-900 dark:text-white">Student
+                                        ID
+                                    </th>
+                                    <th className="text-left py-3 px-4 font-semibold text-gray-900 dark:text-white">Comments</th>
+                                    <th className="text-left py-3 px-4 font-semibold text-gray-900 dark:text-white">Submitted
+                                        At
+                                    </th>
+                                    <th className="text-left py-3 px-4 font-semibold text-gray-900 dark:text-white">Status</th>
+                                    <th className="text-left py-3 px-4 font-semibold text-gray-900 dark:text-white">Points</th>
+                                    <th className="text-left py-3 px-4 font-semibold text-gray-900 dark:text-white">Late</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {submissionsData.map((submission: Submissions) => (
+                                    <tr key={submission._id}
+                                        className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700">
+                                        <td className="py-3 px-4 text-gray-900 dark:text-white">
+                                            {typeof submission.studentId === 'object' && submission.studentId !== null && 'name' in submission.studentId
+                                                ? `${submission.studentId.name} ${submission.studentId.email || ''}`
+                                                : typeof submission.studentId === 'string'
+                                                    ? submission.studentId
+                                                    : 'N/A'}
+                                        </td>
+                                        <td className="py-3 px-4 text-gray-600 dark:text-gray-300">{submission.comments || 'N/A'}</td>
+                                        <td className="py-3 px-4 text-gray-600 dark:text-gray-300">{new Date(submission.submittedAt).toLocaleDateString()}</td>
+                                        <td className="py-3 px-4"><span
+                                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                                submission.status === 'graded' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300' :
+                                                    submission.status === 'submitted' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300' :
+                                                        'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300'
+                                            }`}>
+                                            {submission.status}
+                                        </span>
+                                        </td>
+                                        <td className="py-3 px-4 text-gray-900 dark:text-white">{submission.points !== undefined ? submission.points : 'N/A'}</td>
+                                        <td className="py-3 px-4">{submission.isLate ?
+                                            <span className="text-red-500 dark:text-red-400">Yes</span> :
+                                            <span className="text-green-500 dark:text-green-400">No</span>}</td>
+                                    </tr>
+                                ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    ) : (
+                        !submissionsLoading && !submissionsError && (
+                            <p className="text-gray-600 dark:text-gray-400">No submissions found for this task.</p>
+                        )
+                    )}
+                </div>
+            ) : (
+                // Display Tasks list
+                <div className="space-y-4">
+                    {tasks.map((task: Task) => (
+                        <div key={task._id}
+                             className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+                             onClick={() => setSelectedTaskId(task._id)}
+                        >
+                            <div className="flex justify-between items-start">
+                                <div className="flex-1">
+                                    <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">{task.title}</h4>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{task.description}</p>
+                                    <div
+                                        className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
+                                        <span>Deadline: {new Date(task.deadline).toLocaleDateString()}</span>
+                                        <span>Max Points: {task.maxPoints}</span>
+                                        <span>
+                                            Teacher: {
+                                            typeof task.teacherId === 'object' && task.teacherId !== null && 'name' in task.teacherId
+                                                ? `${task.teacherId.name} ${task.teacherId.surname || ''}`
+                                                : typeof task.teacherId === 'string'
+                                                    ? task.teacherId
+                                                    : 'N/A'
+                                        }
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     ))}
                 </div>
-            </ChartCard>
-        </div>
+            )}
+        </ChartCard>
     );
+});
 
-    const renderContent = (): JSX.Element => {
+
+// --- MAIN DASHBOARD COMPONENT ---
+const AdminDashboard: React.FC = () => {
+    const [sidebarOpen, setSidebarOpen] = React.useState<boolean>(false);
+    const [activeTab, setActiveTab] = React.useState<string>('overview');
+    const [selectedTaskId, setSelectedTaskId] = React.useState<string | null>(null); // New state for selected task
+
+    // --- RTK Query Hooks ---
+    const {
+        data: teachersData,
+        error: teachersError,
+        isLoading: teachersLoading,
+        refetch: refetchTeachers
+    } = useGetAllTeachersQuery({});
+    const {
+        data: studentsData,
+        error: studentsError,
+        isLoading: studentsLoading,
+        refetch: refetchStudents
+    } = useGetAllUsersQuery({});
+    const {
+        data: groupsData,
+        error: groupsError,
+        isLoading: groupsLoading,
+        refetch: refetchGroups
+    } = useGetAllGroupsQuery({});
+    const {
+        data: tasksData,
+        error: tasksError,
+        isLoading: tasksLoading,
+        refetch: refetchTasks
+    } = useGetAllTasksQuery({});
+    const {
+        data: quizzesData,
+        error: quizzesError,
+        isLoading: quizzesLoading,
+        refetch: refetchQuizzes
+    } = useGetAllQuizzesQuery();
+
+    // Fetch submissions based on selectedTaskId
+    const {
+        data: submissionsResponse,
+        error: submissionsError,
+        isLoading: submissionsLoading,
+    } = useGetSubmissionsQuery({taskId: selectedTaskId || ''}, {
+        skip: !selectedTaskId, // Skip fetching if no task is selected
+    });
+
+    const submissions = useMemo(() => submissionsResponse?.submissions || [], [submissionsResponse]);
+
+    const isLoading = teachersLoading || studentsLoading || groupsLoading || tasksLoading || quizzesLoading;
+    const error = teachersError || studentsError || groupsError || tasksError || quizzesError;
+
+    // --- Memoized Callbacks ---
+    const fetchAllData = useCallback(() => {
+        refetchTeachers();
+        refetchStudents();
+        refetchGroups();
+        refetchTasks();
+        refetchQuizzes();
+    }, [refetchTeachers, refetchStudents, refetchGroups, refetchTasks, refetchQuizzes]);
+
+    // --- Memoized Data for Charts ---
+    const students = useMemo(() => studentsData || [], [studentsData]);
+    const groups = useMemo(() => groupsData || [], [groupsData]);
+    const tasks = useMemo(() => tasksData?.tasks || [], [tasksData]);
+    const quizzes = useMemo(() => quizzesData || [], [quizzesData]);
+    const teachers = useMemo(() => teachersData || [], [teachersData]);
+
+    const groupDistribution = useMemo(() =>
+        groups.map((group: Group) => ({
+            name: group.group,
+            students: students.filter((student: Student) => student.group === group.group).length,
+            teachers: group.teachers.length
+        })), [groups, students]);
+
+    const taskStatusData = useMemo(() => [
+        {name: 'Active', value: tasks.filter((task: Task) => new Date(task.deadline) > new Date()).length},
+        {name: 'Overdue', value: tasks.filter((task: Task) => new Date(task.deadline) < new Date()).length}
+    ], [tasks]);
+
+    const quizStatusData = useMemo(() => [
+        {name: 'Open', value: quizzes.filter((quiz: Quiz) => quiz.opened).length},
+        {name: 'Closed', value: quizzes.filter((quiz: Quiz) => !quiz.opened).length}
+    ], [quizzes]);
+
+    // --- Render Logic ---
+    const renderContent = () => {
         switch (activeTab) {
             case 'overview':
-                return <OverviewContent/>;
-            case 'teachers':
-                return <div className="text-center p-8 text-gray-500">Teachers management coming soon...</div>;
-            case 'students':
-                return <div className="text-center p-8 text-gray-500">Students management coming soon...</div>;
-            case 'groups':
-                return <div className="text-center p-8 text-gray-500">Groups management coming soon...</div>;
-            case 'tasks':
-                return <div className="text-center p-8 text-gray-500">Tasks management coming soon...</div>;
-            case 'quizzes':
-                return <div className="text-center p-8 text-gray-500">Quizzes management coming soon...</div>;
-            case 'settings':
-                return <div className="text-center p-8 text-gray-500">Settings coming soon...</div>;
+                return <OverviewContent error={error} fetchAllData={fetchAllData} isLoading={isLoading}
+                                        teachers={teachers} students={students} tasks={tasks} quizzes={quizzes}
+                                        groupDistribution={groupDistribution} taskStatusData={taskStatusData}
+                                        quizStatusData={quizStatusData}/>;
+            case 'teacherStats':
+                return <TeacherStatistics data={teachers} isLoading={isLoading} title="Teacher Statistics"/>;
+            case 'studentStats':
+                return <StudentStatistics data={students} isLoading={isLoading} title="Student Statistics"/>;
+            case 'groupStats':
+                return <ChartCard title="Group Statistics" isLoading={isLoading}>
+                    <div
+                        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{groups.map((group: Group) => (
+                        <div key={group._id}
+                             className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow">
+                            <div className="flex justify-between items-start mb-3"><h4
+                                className="text-lg font-semibold text-gray-900 dark:text-white">{group.group}</h4></div>
+                            <div className="space-y-2"><p
+                                className="text-sm text-gray-600 dark:text-gray-400">Created: {new Date(group.date).toLocaleDateString()}</p>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">Students: {students.filter((s: Student) => s.group === group.group).length}</p>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">Teachers: {group.teachers.length}</p>
+                            </div>
+                        </div>))}</div>
+                </ChartCard>;
+            case 'taskStats':
+                return <TaskStatistics
+                    tasks={tasks}
+                    isLoading={isLoading}
+                    selectedTaskId={selectedTaskId}
+                    setSelectedTaskId={setSelectedTaskId}
+                    submissionsData={submissions}
+                    submissionsLoading={submissionsLoading}
+                    submissionsError={submissionsError}
+                />;
+            case 'quizStats':
+                return <ChartCard title="Quiz Statistics" isLoading={isLoading}>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{quizzes.map((quiz: Quiz) => (
+                        <div key={quiz._id}
+                             className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow">
+                            <div className="flex justify-between items-start mb-3">
+                                <div className="flex-1"><h4
+                                    className="text-lg font-semibold text-gray-900 dark:text-white mb-1">{quiz.title}</h4>{quiz.description && (
+                                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{quiz.description}</p>)}
+                                    <div
+                                        className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
+                                        <span>Time Limit: {quiz.timeLimit} min</span><span
+                                        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${quiz.opened ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300'}`}>{quiz.opened ? 'Open' : 'Closed'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="flex space-x-2">{quiz.groups && quiz.groups.map((groupId) => {
+                                const group = groups.find((g: Group) => g._id === groupId);
+                                return group ? (<span key={groupId}
+                                                      className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300">{group.group}</span>) : null;
+                            })}</div>
+                        </div>))}</div>
+                </ChartCard>;
             default:
-                return <OverviewContent/>;
+                return <OverviewContent error={error} fetchAllData={fetchAllData} isLoading={isLoading}
+                                        teachers={teachers} students={students} tasks={tasks} quizzes={quizzes}
+                                        groupDistribution={groupDistribution} taskStatusData={taskStatusData}
+                                        quizStatusData={quizStatusData}/>;
         }
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
-            <Sidebar/>
-
-            {/* Overlay for mobile */}
-            {sidebarOpen && (
-                <div
-                    className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
-                    onClick={() => setSidebarOpen(false)}
-                />
-            )}
-
-            <div className="md:ml-64">
-                <Header/>
-                <main className="p-6">
-                    {renderContent()}
-                </main>
+        <div
+            className={`min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300`}>
+            <div className="flex">
+                <Sidebar sidebarOpen={sidebarOpen} activeTab={activeTab} setActiveTab={setActiveTab}
+                         setSidebarOpen={setSidebarOpen}/>
+                <div className="flex-1 md:ml-0">
+                    {/* New Header/Top Bar for mobile responsiveness and burger icon */}
+                    <div
+                        className="bg-white dark:bg-gray-900 shadow-sm border-b border-gray-200 dark:border-gray-700 md:hidden">
+                        <div className="flex items-center justify-between h-16 px-6">
+                            <button onClick={() => setSidebarOpen(true)}
+                                    className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                                    aria-label="Open sidebar">
+                                <Menu className="w-6 h-6 text-gray-700 dark:text-gray-300"/>
+                            </button>
+                            <h2 className="text-xl font-semibold text-gray-900 dark:text-white capitalize">
+                                {activeTab === 'overview' ? 'Dashboard Overview' : activeTab.replace('Stats', ' Statistics')}
+                            </h2>
+                            <div
+                                className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                                <span className="text-white text-sm font-medium">A</span>
+                            </div>
+                        </div>
+                    </div>
+                    <main className="p-6">{renderContent()}</main>
+                </div>
             </div>
+            {sidebarOpen && (<div className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+                                  onClick={() => setSidebarOpen(false)} aria-hidden="true"/>)}
         </div>
     );
 };

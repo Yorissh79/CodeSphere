@@ -1,11 +1,11 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import {createApi, fetchBaseQuery} from '@reduxjs/toolkit/query/react';
 
 interface LoginRequest {
     email: string;
     password: string;
 }
 
-interface User {
+export interface User {
     _id: string;
     name: string;
     surname: string;
@@ -107,7 +107,7 @@ export const userApi = createApi({
             },
         }),
         updateUser: builder.mutation<UpdateUserResponse, UpdateUserRequest>({
-            query: ({ _id, ...data }) => ({
+            query: ({_id, ...data}) => ({
                 url: `update/${_id}`,
                 method: 'PUT',
                 headers: {
@@ -125,4 +125,11 @@ export const userApi = createApi({
     }),
 });
 
-export const { useUserLoginMutation, useUserSignupMutation, useUserLogoutMutation, useGetAllUsersQuery, useUpdateUserMutation, useDeleteUserMutation } = userApi;
+export const {
+    useUserLoginMutation,
+    useUserSignupMutation,
+    useUserLogoutMutation,
+    useGetAllUsersQuery,
+    useUpdateUserMutation,
+    useDeleteUserMutation
+} = userApi;
