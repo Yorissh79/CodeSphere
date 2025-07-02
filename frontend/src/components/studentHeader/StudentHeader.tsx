@@ -105,30 +105,38 @@ const StudentHeader: React.FC = () => {
                         className="max-w-7xl mx-auto flex justify-between items-center px-3 sm:px-4 lg:px-6 xl:px-8 py-2.5 sm:py-3 lg:py-4">
                         {/* Avatar and Name */}
                         <motion.div
-                            className="flex items-center gap-2 sm:gap-3 lg:gap-4"
+                            className="flex items-center"
                             whileHover={{scale: 1.02}}
                             transition={{type: "spring", stiffness: 400, damping: 17}}
                         >
-                            <div className="relative">
-                                <img
-                                    src={avatarUrl}
-                                    alt={`${fullName}'s avatar`}
-                                    className="w-8 h-8 sm:w-10 sm:h-10 lg:w-11 lg:h-11 xl:w-12 xl:h-12 rounded-full border-2 border-gradient-to-r from-violet-500 to-purple-500 shadow-md lg:shadow-lg shadow-violet-500/25"
-                                />
-                                <div
-                                    className="absolute -bottom-0.5 -right-0.5 sm:-bottom-1 sm:-right-1 w-3 h-3 sm:w-4 sm:h-4 bg-gradient-to-r from-emerald-400 to-cyan-400 rounded-full border-2 border-white dark:border-slate-900 shadow-sm"></div>
-                            </div>
-                            <div className="hidden sm:block">
-                                <span
-                                    className="block text-xs sm:text-sm lg:text-base font-semibold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent leading-tight">
-                                    {fullName}
-                                </span>
-                                <span
-                                    className="block text-xs lg:text-sm text-slate-500 dark:text-slate-400 font-medium">
-                                    Student Portal
-                                </span>
-                            </div>
+                            <Link
+                                to="/user/student"
+                                className="flex items-center gap-2 sm:gap-3 lg:gap-4"
+                            >
+                                {/* Avatar + Status */}
+                                <div className="relative">
+                                    <img
+                                        src={avatarUrl}
+                                        alt={`${fullName}'s avatar`}
+                                        className="w-8 h-8 sm:w-10 sm:h-10 lg:w-11 lg:h-11 xl:w-12 xl:h-12 rounded-full border-2 border-gradient-to-r from-violet-500 to-purple-500 shadow-md lg:shadow-lg shadow-violet-500/25"
+                                    />
+                                    <div
+                                        className="absolute -bottom-0.5 -right-0.5 sm:-bottom-1 sm:-right-1 w-3 h-3 sm:w-4 sm:h-4 bg-gradient-to-r from-emerald-400 to-cyan-400 rounded-full border-2 border-white dark:border-slate-900 shadow-sm"/>
+                                </div>
+
+                                {/* Text: Name + Label */}
+                                <div className="flex flex-col justify-center">
+      <span
+          className="text-xs sm:text-sm lg:text-base font-semibold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent leading-tight">
+        {fullName}
+      </span>
+                                    <span className="text-xs lg:text-sm text-slate-500 dark:text-slate-400 font-medium">
+        Student Portal
+      </span>
+                                </div>
+                            </Link>
                         </motion.div>
+
 
                         {/* Desktop Navigation */}
                         <nav className="hidden md:flex items-center gap-1 lg:gap-2">

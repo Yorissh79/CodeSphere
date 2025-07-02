@@ -1,7 +1,6 @@
 import {useState} from 'react';
 import {useGetAllTasksQuery} from '../../../services/taskApi'; // Corrected path
 import {useCheckTeacherAuthQuery} from '../../../services/authCheck'; // Corrected path
-import Header from './components/Header';
 import MainContent from './components/MainContent';
 import CreateTaskModal from './components/CreateTaskModal';
 import EditTaskModal from './components/EditTaskModal';
@@ -112,7 +111,6 @@ const TeacherDashboard = () => {
     return (
         <div className="min-h-screen transition-colors duration-300 bg-gray-100 dark:bg-gray-950">
             <Toaster position="top-right" reverseOrder={false}/>
-            <Header/>
             <MainContent
                 tasks={filteredTasks}
                 searchQuery={searchQuery}

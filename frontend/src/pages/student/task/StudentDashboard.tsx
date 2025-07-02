@@ -3,7 +3,6 @@ import {Loader2, AlertCircle} from 'lucide-react';
 import {Toaster} from 'react-hot-toast';
 import {useGetAllStudentTasksQuery} from '../../../services/taskApi';
 import {useCheckAuthQuery} from "../../../services/authCheck.ts";
-import Header from './components/Header';
 import StudentMainContent from './components/StudentMainContent';
 import SubmitTaskModal from './components/SubmitTaskModal';
 import ViewSubmissionModal from './components/ViewSubmissionModal';
@@ -139,7 +138,6 @@ const StudentDashboard = () => {
     return (
         <div className="min-h-screen transition-colors duration-300 bg-gray-100 dark:bg-gray-950">
             <Toaster position="top-right" reverseOrder={false}/>
-            <Header/>
             <StudentMainContent
                 tasks={filteredAndSearchedTasks}
                 searchQuery={searchQuery}
