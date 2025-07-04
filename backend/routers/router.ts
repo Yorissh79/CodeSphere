@@ -6,7 +6,8 @@ import {
     getUser,
     loginUser,
     logout,
-    updateUser
+    updateUser,
+    verifyOtp
 } from "../controllers/userController";
 
 import { checkAuth } from "../controllers/authController";
@@ -28,10 +29,11 @@ import {
 import { checkAdminAuth } from "../middleware/adminAuthController";
 
 import {
+    checkGoogleAuth,
     getCurrentUser,
     handleGoogleCallback,
     initiateGoogleAuth,
-    logoutUser,
+    logoutUser, protectedRoute,
     registerUser,
     verifyGoogleToken
 } from "../controllers/googleController";
@@ -94,6 +96,8 @@ import {
 } from "../controllers/submissionController";
 import { upload } from "../controllers/fileUploadService";
 import {authenticateToken, requireAdmin} from "../middleware/googleAuth";
+import { ContentController } from '../controllers/contentController';
+import { emailSender } from '../controllers/emailController';
 
 const router = express.Router();
 
@@ -123,15 +127,22 @@ router.post("/admin/logout", logoutAdmin);
 router.get("/auth/admin/check", checkAdminAuth);
 
 router.get('/google/auth', initiateGoogleAuth);
-router.get('/google/callback', ...handleGoogleCallback as any); // Spread the array of middleware/handlers
+// router.get('/google/callback', ...handleGoogleCallback);
 
-router.post('/google/verify', verifyGoogleToken); // For client-side Google ID token verification
-router.post('/google/register', registerUser);
-router.post('/google/logout', logoutUser as any);
+// Authentication check routes
+router.get('/google/check-google-auth', checkGoogleAuth);
 
-// Protected routes using custom JWT middleware
-router.get('/user', authenticateToken as any, getCurrentUser as any);
-router.get('/users', authenticateToken as any, requireAdmin as any, getAllUsers as any); // Admin-only route
+// Token verification
+router.post('/google/verify', verifyGoogleToken);
+
+// User registration and authentication
+router.post('/register', registerUser);
+router.post('/logout', logoutUser as any );
+
+// Protected routes
+router.get('/user', getCurrentUser as any);
+router.get('/users', requireAdmin, getAllUsers);
+router.get('/protected', protectedRoute as any);
 
 // Group Routes
 router.post("/group/create", validTeacherOrAdmin, createGroup);
@@ -170,6 +181,9 @@ router.delete("/apis/tasks/delete", validTeacherOrAdmin, deleteAllTasks);
 router.delete("/apis/tasks/delete/:id", validTeacherOrAdmin, deleteTaskById);
 router.put("/apis/tasks/update/:taskId", validTeacherOrAdmin, updateTaskById as any);
 
+// email
+router.post("/api/contact", emailSender as any)
+
 // Submission Routes
 router.post("/apis/submissions/create", studentValid, createSubmission as any);
 router.get("/apis/submissions", getSubmissions as any);
@@ -186,5 +200,28 @@ router.put("/comments/:id", updateComment as any);
 router.delete("/comments/:id", deleteComment as any);
 router.get("/comments/author", getCommentsByAuthor as any);
 router.get("/comments/stats", validTeacherOrAdmin, getCommentStats as any);
+
+// Admin CRUD
+const contentController = new ContentController();
+
+// Public routes
+router.get('/content/:pageType', contentController.getContentByType);
+router.get('/faqs', contentController.getFAQs);
+router.post('/contact', contentController.createContactMessage);
+
+router.get('/admin/content', checkAdminAuth, contentController.getAllContent);
+router.put('/admin/content/:pageType', checkAdminAuth, contentController.updateContent);
+
+router.get('/admin/faqs', checkAdminAuth, contentController.getFAQs);
+router.post('/admin/faqs', checkAdminAuth, contentController.createFAQ);
+router.put('/admin/faqs/:id', checkAdminAuth, contentController.updateFAQ);
+router.delete('/admin/faqs/:id', checkAdminAuth, contentController.deleteFAQ);
+
+router.get('/admin/contact-messages', checkAdminAuth, contentController.getContactMessages);
+router.put('/admin/contact-messages/:id', checkAdminAuth, contentController.updateContactMessage);
+router.delete('/admin/contact-messages/:id', checkAdminAuth, contentController.deleteContactMessage);
+
+// OTP
+router.post('/user/verify-otp', verifyOtp);
 
 export default router;

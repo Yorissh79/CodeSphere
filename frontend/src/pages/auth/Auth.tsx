@@ -30,7 +30,6 @@ export default function AppLayout() {
             }
 
             if (error) {
-                // Clear any stale auth tokens and navigate to login
                 localStorage.removeItem('token');
                 sessionStorage.removeItem('token');
                 navigate("/registration/login", {replace: true});
@@ -41,8 +40,6 @@ export default function AppLayout() {
             } else if (user?.role === "admin") {
                 navigate("/user/admin", {replace: true});
             } else if (user && !user.role) {
-                // Handle case where user exists but role is not set
-                console.warn("User authenticated but no role assigned");
                 navigate("/registration/login", {replace: true});
             }
         };

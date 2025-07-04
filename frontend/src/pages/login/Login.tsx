@@ -1,6 +1,6 @@
 import {Link, useNavigate} from "react-router-dom";
-import {useState} from "react";
-import {useVerifyGoogleTokenMutation} from "../../services/googleApi";
+import {useState, useEffect} from "react";
+import {useVerifyGoogleTokenMutation, useCheckGoogleAuthQuery} from "../../services/googleApi";
 import {useUserLoginMutation} from "../../services/userApi";
 import image from "../../assets/Codesphere_icon.png";
 import {Eye, EyeOff, Mail, Lock, AlertCircle} from 'lucide-react';
@@ -13,11 +13,36 @@ const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isTeacher, setIsTeacher] = useState(false);
-    const [verifyGoogleToken, {isLoading: googleLoading, error: googleError}] = useVerifyGoogleTokenMutation();
     const [showPassword, setShowPassword] = useState(false);
+
+    // API hooks
+    const [verifyGoogleToken, {isLoading: googleLoading, error: googleError}] = useVerifyGoogleTokenMutation();
     const [userLogin, {isLoading: userLoading, error: userError}] = useUserLoginMutation();
     const [teacherLogin, {isLoading: teacherLoading, error: teacherError}] = useTeacherLoginMutation();
     const [adminLogin, {isLoading: adminLoading, error: adminError}] = useAdminLoginMutation();
+
+    // Check if user is already authenticated via Google
+    const {data: authData, isLoading: authLoading} = useCheckGoogleAuthQuery();
+
+    // Check for existing Google authentication on component mount
+    useEffect(() => {
+        if (authData?.isAuthenticated && authData?.isGoogleAuth && authData?.user) {
+            // User is already authenticated via Google, redirect based on role
+            const userRole = authData.user.role?.toLowerCase();
+            switch (userRole) {
+                case 'admin':
+                    navigate("/check/admin");
+                    break;
+                case 'teacher':
+                    navigate("/check/teacher");
+                    break;
+                case 'student':
+                default:
+                    navigate("/check/student");
+                    break;
+            }
+        }
+    }, [authData, navigate]);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -44,22 +69,60 @@ const Login = () => {
                 const result = await verifyGoogleToken({
                     idToken: credentialResponse.credential,
                 }).unwrap();
-                // Navigate based on user role from the response
-                if (result.user.role === 'admin') {
-                    navigate('/user/admin');
-                } else if (result.user.role === 'teacher') {
-                    navigate('/user/teacher');
-                } else {
-                    navigate('/user/student');
+
+                // Store the token in localStorage if provided
+                if (result.token) {
+                    localStorage.setItem('token', result.token);
                 }
+
+                // Navigate based on user role from the response
+                if (result.user) {
+                    const userRole = result.user.role?.toLowerCase();
+                    switch (userRole) {
+                        case 'student':
+                            navigate("/user/google/student");
+                            break;
+                        case 'teacher':
+                            navigate("/user/google/teacher");
+                            break;
+                        default:
+                            navigate("/user/google/student");
+                            break;
+                    }
+                } else {
+                    // If no user data, navigate to Google auth flow
+                    navigate('/check/google-auth');
+                }
+
             } catch (err) {
                 console.error('Google login error:', err);
             }
         }
     };
 
-    const isLoading = userLoading || teacherLoading || googleLoading || adminLoading;
+    const isLoading = userLoading || teacherLoading || googleLoading || adminLoading || authLoading;
     const hasError = userError || teacherError || adminError || googleError;
+
+    // Get error message from different error sources
+    const getErrorMessage = () => {
+        if (userError && 'data' in userError) {
+            const errorData = userError.data as any;
+            return errorData?.message || 'Login failed';
+        }
+        if (teacherError && 'data' in teacherError) {
+            const errorData = teacherError.data as any;
+            return errorData?.message || 'Teacher login failed';
+        }
+        if (adminError && 'data' in adminError) {
+            const errorData = adminError.data as any;
+            return errorData?.message || 'Admin login failed';
+        }
+        if (googleError && 'data' in googleError) {
+            const errorData = googleError.data as any;
+            return errorData?.message || 'Google login failed';
+        }
+        return 'Login failed. Please check your credentials.';
+    };
 
     // Skeleton loader component
     const SkeletonLoader = () => (
@@ -75,6 +138,20 @@ const Login = () => {
             <div className="h-12 bg-gray-300 dark:bg-gray-600 rounded"></div>
         </div>
     );
+
+    // Show loading state while checking authentication
+    if (authLoading) {
+        return (
+            <div
+                className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-indigo-900 flex items-center justify-center p-4 sm:p-6 lg:p-8 font-mono">
+                <div className="flex items-center justify-center gap-3">
+                    <div
+                        className="w-6 h-6 border-2 border-indigo-600/30 border-t-indigo-600 rounded-full animate-spin"></div>
+                    <p className="text-gray-600 dark:text-gray-300">Checking authentication...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div
@@ -124,7 +201,7 @@ const Login = () => {
                             className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-xl flex items-center gap-3 transition-all duration-300">
                             <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0"/>
                             <p className="text-red-700 dark:text-red-400 text-sm">
-                                Login failed. Please check your credentials.
+                                {getErrorMessage()}
                             </p>
                         </div>
                     )}

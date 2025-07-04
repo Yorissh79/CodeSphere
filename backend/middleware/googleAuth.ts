@@ -8,14 +8,6 @@ interface AuthenticatedRequest extends Request {
     currentUser?: IUser;
 }
 
-// declare global {
-//     namespace Express {
-//         interface Request {
-//             user?: IUser;
-//         }
-//     }
-// }
-
 export const authenticateToken = async (
     req: AuthenticatedRequest,
     res: Response,

@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import userModel, {IUser} from "../models/userModel";
 import { z } from 'zod';
 import { generateToken } from "../utils/generateToken";
+import { sendOtpEmail } from './optController';
 
 const createUserSchema = z.object({
     name: z.string(),
@@ -10,6 +11,11 @@ const createUserSchema = z.object({
     surname: z.string(),
     role: z.string(),
     group: z.string()
+});
+
+const otpSchema = z.object({
+    email: z.string().email(),
+    otp: z.string().length(6),
 });
 
 const loginSchema = z.object({
@@ -33,10 +39,14 @@ export const createUser = async (req: Request, res: Response): Promise<any> => {
 
     const { name, email, password, surname, role, group } = result.data;
 
-    const existingUser = await userModel.findOne({ email }) as IUser | null;
+    const existingUser = await userModel.findOne({ email });
     if (existingUser) {
         return res.status(400).json({ error: 'User already exists' });
     }
+
+    // Generate OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // OTP expires in 10 minutes
 
     const newUser = await userModel.create({
         name,
@@ -45,17 +55,51 @@ export const createUser = async (req: Request, res: Response): Promise<any> => {
         surname,
         role,
         group,
-    }) as IUser;
+        otp,
+        otpExpires,
+        isVerified: false
+    });
 
-    generateToken(res, newUser._id.toString());
+    try {
+        await sendOtpEmail(email, otp);
+        res.status(201).json({
+            message: 'User created successfully. Please check your email for the OTP.',
+            user: { email: newUser.email },
+        });
+    } catch (error) {
+        console.error("Failed to send OTP email:", error);
+        return res.status(500).json({ error: 'Failed to create user. Could not send verification email.' });
+    }
+};
 
-    res.status(201).json({
-        message: 'User created successfully',
-        user: {
-            id: newUser._id,
-            name: newUser.name,
-            email: newUser.email,
-        },
+export const verifyOtp = async (req: Request, res: Response): Promise<any> => {
+    const result = otpSchema.safeParse(req.body);
+    if (!result.success) {
+        return res.status(400).json({ error: result.error });
+    }
+
+    const { email, otp } = result.data;
+
+    const user = await userModel.findOne({ email });
+
+    if (!user) {
+        return res.status(404).json({ error: 'User not found.' });
+    }
+
+    if (user.otp !== otp || (user.otpExpires && user.otpExpires < new Date())) {
+        return res.status(400).json({ error: 'Invalid or expired OTP.' });
+    }
+
+    user.isVerified = true;
+    user.otp = undefined;
+    user.otpExpires = undefined;
+    await user.save();
+
+    generateToken(res, user._id.toString());
+
+    res.status(200).json({
+        message: 'Account verified successfully!',
+        user: { id: user._id, name: user.name, email: user.email },
     });
 };
 

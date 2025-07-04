@@ -1,3 +1,5 @@
+// userModel.ts
+
 import mongoose, { Document, Schema, Model } from "mongoose";
 import bcrypt from "bcrypt";
 
@@ -10,12 +12,14 @@ export interface IUser extends Document {
     role: string;
     group: string;
     googleId?: string;
+    otp?: string; // Add OTP field
+    otpExpires?: Date; // Add OTP expiration field
+    isVerified: boolean; // Add verification status
     passwordControl(password: string): Promise<boolean>;
 }
 
 const userSchema: Schema<IUser> = new Schema(
     {
-        // _id: mongoose.Types.ObjectId,
         name: { type: String, required: true },
         email: { type: String, required: true, unique: true },
         password: { type: String, required: false },
@@ -23,18 +27,22 @@ const userSchema: Schema<IUser> = new Schema(
         role: { type: String, required: true },
         group: { type: String, required: false },
         googleId: { type: String, required: false },
+        otp: { type: String },
+        otpExpires: { type: Date },
+        isVerified: { type: Boolean, default: false },
     },
     { timestamps: true }
 );
 
 userSchema.pre<IUser>("save", async function (next) {
-    if (!this.isModified("password")) return next();
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
+    if (this.isModified("password") && this.password) {
+        const salt = await bcrypt.genSalt(10);
+        this.password = await bcrypt.hash(this.password, salt);
+    }
     next();
 });
 
-userSchema.methods.passwordControl = async function (password: string) {
+userSchema.methods.passwordControl = async function (password: string): Promise<boolean> {
     return await bcrypt.compare(password, this.password);
 };
 

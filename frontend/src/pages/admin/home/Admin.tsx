@@ -1,12 +1,10 @@
 import React, {useEffect, useState} from "react";
 import {motion, AnimatePresence} from "framer-motion";
 import {
-    Bell,
     Menu,
     X,
     Users,
     FileText,
-    Settings,
     Upload,
     Download,
     Calendar,
@@ -20,11 +18,9 @@ import {
     User,
     BookOpen,
     ClipboardList,
-    UserCheck,
     GraduationCap
 } from "lucide-react";
 
-// Import API hooks
 import {useGetAllUsersQuery} from '../../../services/userApi';
 import {useGetAllTeachersQuery} from '../../../services/teacherApi';
 import {useGetAllGroupsQuery} from '../../../services/groupApi';
@@ -61,27 +57,26 @@ interface AdminTask {
 }
 
 // Define specific types for API data to help TypeScript
+// Adjusted QuizData to match potential undefined properties from API
 interface UserData {
     _id: string;
     name: string;
     surname: string;
     email: string;
-    // Add other user properties if available
 }
 
 interface TeacherData {
     _id: string;
     name: string;
     surname: string;
-    // Add other teacher properties if available
 }
 
 interface SubmissionData {
     _id: string;
-    studentId: UserData | string; // It can be an object or just an ID string
+    // Keep this as UserData | string as per API response
+    studentId: UserData | string;
     submittedAt: string;
     status: string;
-    // Add other submission properties
 }
 
 interface TaskData {
@@ -89,23 +84,21 @@ interface TaskData {
     title: string;
     deadline: string;
     createdAt: string;
-    teacherId: TeacherData; // Assuming teacherId is always an object here
-    // Add other task properties
+    teacherId: TeacherData;
 }
 
 interface QuizData {
     _id: string;
-    opened: boolean;
-    createdAt?: string; // createdAt might be optional
-    // Add other quiz properties
+    // Changed to optional boolean based on error
+    opened?: boolean;
+    // Changed to optional string based on error
+    createdAt?: string;
 }
 
 interface MissData {
     _id: string;
     date: string;
-    // Add other miss properties
 }
-
 
 // Spinner Component
 const Spinner = () => (
@@ -163,11 +156,10 @@ const StatCard = ({stat, index}: { stat: AdminStats; index: number }) => (
                     {stat.value}
                 </p>
                 <div className="flex items-center mt-2">
-          <span className={`text-sm font-medium ${
-              stat.trend === 'up' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-          }`}>
-            {stat.change}
-          </span>
+                    <span
+                        className={`text-sm font-medium ${stat.trend === 'up' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                        {stat.change}
+                    </span>
                 </div>
             </div>
             <div className={`p-3 rounded-lg ${stat.color} group-hover:scale-110 transition-transform duration-300`}>
@@ -202,25 +194,24 @@ const TaskCard = ({task}: { task: AdminTask }) => {
                     {task.title}
                 </h4>
                 <button
-                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
+                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                >
                     <MoreVertical className="w-4 h-4 text-gray-500"/>
                 </button>
             </div>
 
-            <div className="flex items-center gap-2 mb-3">
-        <span
-            className={`px-2 py-1 rounded-full text-xs font-medium ${priorityColors[task.priority]}`}>
-          {task.priority}
-        </span>
-                <span
-                    className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[task.status]}`}>
-          {task.status}
-        </span>
+            <div className="flex items-center gap-2 mb-3 flex-wrap">
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${priorityColors[task.priority]}`}>
+                    {task.priority}
+                </span>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[task.status]}`}>
+                    {task.status}
+                </span>
                 {task.count && (
                     <span
                         className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
-            {task.count} items
-          </span>
+                        {task.count} items
+                    </span>
                 )}
             </div>
 
@@ -279,7 +270,7 @@ const ActivityItem = ({activity, index}: { activity: RecentActivity; index: numb
                 {getActivityIcon(activity.type)}
             </div>
             <div className="flex-1 min-w-0">
-                <p className="text-sm text-gray-900 dark:text-white">
+                <p className="text-sm text-gray-900 dark:text-white truncate">
                     <span className="font-medium">{activity.user}</span>{' '}
                     {activity.action}
                 </p>
@@ -326,7 +317,6 @@ const FileUploadZone = () => {
     return (
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-100 dark:border-gray-700">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">File Upload</h3>
-
             <div
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
@@ -354,9 +344,8 @@ const FileUploadZone = () => {
                     Support for PDF, JPG, PNG files up to 10MB
                 </p>
             </div>
-
             {uploadedFiles.length > 0 && (
-                <div className="mt-4 space-y-2">
+                <div className="mt-4 space-y-2 max-h-40 overflow-y-auto">
                     {uploadedFiles.map((file, index) => (
                         <motion.div
                             key={index}
@@ -364,16 +353,16 @@ const FileUploadZone = () => {
                             animate={{opacity: 1, y: 0}}
                             className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
                         >
-                            <div className="flex items-center">
+                            <div className="flex items-center min-w-0">
                                 <FileText className="w-4 h-4 text-blue-500 mr-2"/>
-                                <span className="text-sm text-gray-700 dark:text-gray-300">{file.name}</span>
-                                <span className="text-xs text-gray-500 ml-2">
-                  ({(file.size / 1024 / 1024).toFixed(2)} MB)
-                </span>
+                                <span className="text-sm text-gray-700 dark:text-gray-300 truncate">{file.name}</span>
+                                <span className="text-xs text-gray-500 ml-2 flex-shrink-0">
+                                    ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                                </span>
                             </div>
                             <button
                                 onClick={() => removeFile(index)}
-                                className="text-red-500 hover:text-red-700 p-1"
+                                className="text-red-500 hover:text-red-700 p-1 flex-shrink-0"
                             >
                                 <X className="w-4 h-4"/>
                             </button>
@@ -387,7 +376,6 @@ const FileUploadZone = () => {
 
 // Main Admin Component
 const Admin = () => {
-    const [darkMode, setDarkMode] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [currentUser] = useState({
         name: "Admin",
@@ -401,6 +389,7 @@ const Admin = () => {
     const {data: teachers, isLoading: teachersLoading, error: teachersError} = useGetAllTeachersQuery({});
     const {data: groups, isLoading: groupsLoading, error: groupsError} = useGetAllGroupsQuery({});
     const {data: tasks, isLoading: tasksLoading, error: tasksError} = useGetAllTasksQuery({});
+    // Use an empty object as a parameter for quizzes query if it expects one
     const {data: quizzes, isLoading: quizzesLoading, error: quizzesError} = useGetAllQuizzesQuery();
     const {data: misses, isLoading: missesLoading, error: missesError} = useGetAllMissesQuery({});
     const {data: submissions, isLoading: submissionsLoading, error: submissionsError} = useGetSubmissionsQuery({});
@@ -408,20 +397,10 @@ const Admin = () => {
     // Loading state
     const isLoading = usersLoading || teachersLoading || groupsLoading || tasksLoading || quizzesLoading || missesLoading || submissionsLoading;
 
-    // Dark mode toggle
-    useEffect(() => {
-        if (darkMode) {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-        }
-    }, [darkMode]);
-
     // Generate stats from API data
     const generateStats = (): AdminStats[] => {
         const stats: AdminStats[] = [];
 
-        // Users stats
         if (users && Array.isArray(users)) {
             stats.push({
                 label: "Total Students",
@@ -433,7 +412,6 @@ const Admin = () => {
             });
         }
 
-        // Teachers stats
         if (teachers && Array.isArray(teachers)) {
             stats.push({
                 label: "Total Teachers",
@@ -445,7 +423,6 @@ const Admin = () => {
             });
         }
 
-        // Tasks stats
         if (tasks && tasks.tasks) {
             const activeTasks = tasks.tasks.filter((task: TaskData) => new Date(task.deadline) > new Date()).length;
             stats.push({
@@ -458,9 +435,9 @@ const Admin = () => {
             });
         }
 
-        // Quizzes stats
         if (quizzes && Array.isArray(quizzes)) {
-            const activeQuizzes = quizzes.filter((quiz: QuizData) => quiz.opened).length;
+            // Check if quiz.opened is true, handling undefined
+            const activeQuizzes = quizzes.filter((quiz: QuizData) => quiz.opened === true).length;
             stats.push({
                 label: "Active Quizzes",
                 value: activeQuizzes.toString(),
@@ -471,7 +448,6 @@ const Admin = () => {
             });
         }
 
-        // Groups stats
         if (groups && Array.isArray(groups)) {
             stats.push({
                 label: "Total Groups",
@@ -483,7 +459,6 @@ const Admin = () => {
             });
         }
 
-        // Submissions stats
         if (submissions && submissions.submissions) {
             stats.push({
                 label: "Total Submissions",
@@ -495,24 +470,27 @@ const Admin = () => {
             });
         }
 
-        return stats.slice(0, 4); // Show only first 4 stats
+        return stats.slice(0, 4);
     };
 
     // Generate recent activities from API data
     const generateRecentActivities = (): RecentActivity[] => {
         const activities: RecentActivity[] = [];
 
-        // Recent submissions
         if (submissions && submissions.submissions) {
-            // Create a copy before sorting
             const recentSubmissions = [...submissions.submissions]
                 .sort((a: SubmissionData, b: SubmissionData) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime())
                 .slice(0, 2);
 
             recentSubmissions.forEach(submission => {
                 let studentName = 'Unknown Student';
-                if (typeof submission.studentId === 'object' && submission.studentId !== null && 'name' in submission.studentId) {
-                    studentName = submission.studentId.name;
+                // Type assertion: Ensure studentId is treated as UserData when accessing 'name'
+                if (typeof submission.studentId === 'object' && submission.studentId !== null) {
+                    // Check if it has the 'name' property as defined in UserData
+                    const student = submission.studentId as UserData;
+                    if (student.name) {
+                        studentName = student.name;
+                    }
                 }
 
                 activities.push({
@@ -525,9 +503,7 @@ const Admin = () => {
             });
         }
 
-        // Recent tasks
         if (tasks && tasks.tasks) {
-            // Create a copy before sorting
             const recentTasks = [...tasks.tasks]
                 .sort((a: TaskData, b: TaskData) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
                 .slice(0, 2);
@@ -547,11 +523,10 @@ const Admin = () => {
             });
         }
 
-        // Recent quizzes
         if (quizzes && Array.isArray(quizzes)) {
-            // Create a copy before sorting
             const recentQuizzes = [...quizzes]
                 .sort((a: QuizData, b: QuizData) => {
+                    // Handle potential undefined createdAt for sorting
                     const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
                     const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
                     return dateB - dateA;
@@ -561,22 +536,22 @@ const Admin = () => {
             recentQuizzes.forEach(quiz => {
                 activities.push({
                     id: quiz._id,
-                    user: "Teacher", // Assuming 'Teacher' is a placeholder if no teacher info on quiz object
+                    user: "Teacher", // Assuming 'Teacher' for quiz creation for now as no teacherId is available on QuizData
                     action: "created a new quiz",
+                    // Provide a fallback for createdAt if it's undefined
                     time: formatTimeAgo(quiz.createdAt || new Date().toISOString()),
                     type: "quiz"
                 });
             });
         }
 
-        return activities.slice(0, 4); // Show only first 4 activities
+        return activities.slice(0, 4);
     };
 
     // Generate admin tasks
     const generateAdminTasks = (): AdminTask[] => {
         const adminTasks: AdminTask[] = [];
 
-        // Pending submissions review
         if (submissions && submissions.submissions) {
             const pendingSubmissions = submissions.submissions.filter((s: SubmissionData) => s.status === 'submitted').length;
             if (pendingSubmissions > 0) {
@@ -591,7 +566,6 @@ const Admin = () => {
             }
         }
 
-        // Overdue tasks
         if (tasks && tasks.tasks) {
             const overdueTasks = tasks.tasks.filter((task: TaskData) => new Date(task.deadline) < new Date()).length;
             if (overdueTasks > 0) {
@@ -606,7 +580,6 @@ const Admin = () => {
             }
         }
 
-        // Recent misses to review
         if (misses && misses.data) {
             const recentMisses = misses.data.filter((miss: MissData) => {
                 const missDate = new Date(miss.date);
@@ -627,7 +600,6 @@ const Admin = () => {
             }
         }
 
-        // System maintenance task
         adminTasks.push({
             id: 'system-maintenance',
             title: 'System Backup & Maintenance',
@@ -636,7 +608,7 @@ const Admin = () => {
             dueDate: 'Weekly'
         });
 
-        return adminTasks.slice(0, 3); // Show only first 3 tasks
+        return adminTasks.slice(0, 3);
     };
 
     // Helper function to format time ago
@@ -653,7 +625,6 @@ const Admin = () => {
 
     if (isLoading) return <Spinner/>;
 
-    // Handle API errors
     if (usersError || teachersError || groupsError || tasksError || quizzesError || missesError || submissionsError) {
         console.error('API Errors:', {
             usersError,
@@ -671,7 +642,8 @@ const Admin = () => {
     const adminTasks = generateAdminTasks();
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+        <div
+            className="min-h-screen w-full justify-center align-middle bg-gray-50 dark:bg-gray-900 transition-colors duration-300 flex">
             <WelcomePopup name={currentUser.name}/>
 
             {/* Mobile Sidebar Overlay */}
@@ -687,94 +659,19 @@ const Admin = () => {
                 )}
             </AnimatePresence>
 
-            {/* Sidebar */}
-            <motion.aside
-                initial={{x: -280}}
-                animate={{x: sidebarOpen ? 0 : -280}}
-                transition={{type: "spring", damping: 25}}
-                className="fixed left-0 top-0 h-full w-70 bg-white dark:bg-gray-800 shadow-xl z-50 lg:static lg:translate-x-0 lg:shadow-none border-r border-gray-200 dark:border-gray-700"
-            >
-                <div className="p-6">
-                    <div className="flex items-center justify-between mb-8">
-                        <h2 className="text-xl font-bold text-gray-900 dark:text-white">Admin Panel</h2>
-                        <button
-                            onClick={() => setSidebarOpen(false)}
-                            className="lg:hidden p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
-                        >
-                            <X className="w-5 h-5"/>
-                        </button>
-                    </div>
-
-                    <nav className="space-y-2">
-                        {[
-                            {icon: BarChart3, label: "Dashboard", active: true},
-                            {icon: Users, label: "Students"},
-                            {icon: GraduationCap, label: "Teachers"},
-                            {icon: FileText, label: "Tasks"},
-                            {icon: BookOpen, label: "Quizzes"},
-                            {icon: UserCheck, label: "Attendance"},
-                            {icon: Activity, label: "Analytics"},
-                            {icon: Settings, label: "Settings"}
-                        ].map((item) => (
-                            <motion.a
-                                key={item.label}
-                                href="#"
-                                whileHover={{x: 4}}
-                                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                                    item.active
-                                        ? 'bg-blue-500 text-white shadow-lg'
-                                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                                }`}
-                            >
-                                <item.icon className="w-5 h-5"/>
-                                <span className="font-medium">{item.label}</span>
-                            </motion.a>
-                        ))}
-                    </nav>
-                </div>
-            </motion.aside>
-
             {/* Main Content */}
-            <div className="lg:ml-70">
+            <div className="flex-1 overflow-y-auto">
+                <div className="p-4 lg:p-6 flex items-center justify-end lg:hidden">
+                    <button
+                        onClick={() => setSidebarOpen(true)}
+                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                    >
+                        <Menu className="w-5 h-5"/>
+                    </button>
+                </div>
+
                 {/* Dashboard Content */}
                 <main className="p-4 lg:p-8 space-y-8">
-                    {/* Welcome Section */}
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <button
-                                onClick={() => setSidebarOpen(true)}
-                                className="lg:hidden p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
-                            >
-                                <Menu className="w-5 h-5"/>
-                            </button>
-                            <div>
-                                <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">
-                                    Welcome back, {currentUser.name}!
-                                </h1>
-                                <p className="text-gray-600 dark:text-gray-400">
-                                    {currentUser.role} • System Overview
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center gap-4">
-                            <motion.button
-                                whileTap={{scale: 0.95}}
-                                onClick={() => setDarkMode(!darkMode)}
-                                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
-                            >
-                                {darkMode ? '☀️' : '🌙'}
-                            </motion.button>
-                            <motion.button
-                                whileTap={{scale: 0.95}}
-                                className="relative p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
-                            >
-                                <Bell className="w-5 h-5"/>
-                                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
-                            </motion.button>
-                        </div>
-                    </div>
-
                     {/* Stats Grid */}
                     <section>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -845,7 +742,6 @@ const Admin = () => {
                                         </button>
                                     </div>
                                 </div>
-
                                 <div
                                     className="h-64 bg-gray-50 dark:bg-gray-700 rounded-lg flex items-center justify-center">
                                     <div className="text-center">

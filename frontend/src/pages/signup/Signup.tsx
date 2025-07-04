@@ -26,6 +26,7 @@ const Signup = () => {
     const signUp = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
+            // The backend now sends back the email upon successful creation
             await createPost({
                 email,
                 name,
@@ -34,7 +35,9 @@ const Signup = () => {
                 group,
                 role: 'student',
             }).unwrap();
-            navigate('/registration/login');
+
+            // Navigate to the new OTP verification page
+            navigate('/registration/verify-otp', {state: {email}});
         } catch (err) {
             console.error('Signup error:', err);
         }

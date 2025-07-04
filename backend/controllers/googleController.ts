@@ -2,6 +2,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { OAuth2Client } from 'google-auth-library';
 import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken'; // Add this import
 import passport from '../config/passport'; // Correct path to Passport config
 import userModel, { IUser } from '../models/userModel';
 import { generateToken } from '../utils/generateTokenGoogle';
@@ -19,6 +20,117 @@ interface CustomAuthRequest {
     session: any;
     logout?: (callback: (err: any) => void) => void;
 }
+
+// GET /auth/check-google-auth - Check if user is authenticated via Google using cookie
+export const checkGoogleAuth = async (req: Request, res: Response): Promise<any> => {
+    try {
+        // Get JWT token from cookie
+        const token = req.cookies.jwt;
+
+        if (!token) {
+            return res.status(401).json({
+                isAuthenticated: false,
+                isGoogleAuth: false,
+                message: 'No authentication token found'
+            });
+        }
+
+        // Verify and decode JWT token
+        const decoded = jwt.verify(token, env.JWT_SECRET) as { userId: string };
+
+        if (!decoded.userId) {
+            return res.status(401).json({
+                isAuthenticated: false,
+                isGoogleAuth: false,
+                message: 'Invalid token'
+            });
+        }
+
+        // Find user in database
+        const user = await userModel.findById(decoded.userId).select('-password') as IUser | null;
+
+        if (!user) {
+            return res.status(404).json({
+                isAuthenticated: false,
+                isGoogleAuth: false,
+                message: 'User not found'
+            });
+        }
+
+        // Check if user has Google ID (indicating Google authentication)
+        const isGoogleAuth = !!user.googleId;
+
+        return res.status(200).json({
+            isAuthenticated: true,
+            isGoogleAuth,
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                surname: user.surname,
+                group: user.group
+            }
+        });
+
+    } catch (error: any) {
+        if (error.name === 'JsonWebTokenError') {
+            return res.status(401).json({
+                isAuthenticated: false,
+                isGoogleAuth: false,
+                message: 'Invalid token'
+            });
+        }
+
+        if (error.name === 'TokenExpiredError') {
+            return res.status(401).json({
+                isAuthenticated: false,
+                isGoogleAuth: false,
+                message: 'Token expired'
+            });
+        }
+
+        return handleControllerError(res, error, 'Authentication check failed');
+    }
+};
+
+// Alternative: Middleware function to check Google authentication
+export const checkGoogleAuthMiddleware = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
+    try {
+        const token = req.cookies.jwt;
+
+        if (!token) {
+            return res.status(401).json({
+                isAuthenticated: false,
+                isGoogleAuth: false,
+                message: 'No authentication token found'
+            });
+        }
+
+        const decoded = jwt.verify(token, env.JWT_SECRET) as { userId: string };
+        const user = await userModel.findById(decoded.userId).select('-password') as IUser | null;
+
+        if (!user) {
+            return res.status(404).json({
+                isAuthenticated: false,
+                isGoogleAuth: false,
+                message: 'User not found'
+            });
+        }
+
+        // Add user info to request object
+        (req as any).user = user;
+        (req as any).isGoogleAuth = !!user.googleId;
+
+        next();
+    } catch (error) {
+        return res.status(401).json({
+            isAuthenticated: false,
+            isGoogleAuth: false,
+            message: 'Authentication failed'
+        });
+    }
+};
 
 // POST /auth/google/verify - Verify Google ID token (for client-side integration)
 export const verifyGoogleToken = async (req: Request, res: Response): Promise<any> => {

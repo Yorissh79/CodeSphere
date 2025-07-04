@@ -65,6 +65,21 @@ interface UpdateUserResponse {
     };
 }
 
+interface VerifyOtpRequest {
+    email: string;
+    otp: string;
+}
+
+interface VerifyOtpResponse {
+    message: string;
+    token?: string;
+    user?: {
+        id: string;
+        name: string;
+        email: string;
+    };
+}
+
 export const userApi = createApi({
     reducerPath: 'userApi',
     baseQuery: fetchBaseQuery({
@@ -122,6 +137,14 @@ export const userApi = createApi({
                 method: 'DELETE',
             }),
         }),
+        verifyOtp: builder.mutation<VerifyOtpResponse, VerifyOtpRequest>({
+            query: (data) => ({
+                url: 'verify-otp',
+                method: 'POST',
+                headers: {"Content-Type": "application/json"},
+                body: data,
+            }),
+        }),
     }),
 });
 
@@ -131,5 +154,6 @@ export const {
     useUserLogoutMutation,
     useGetAllUsersQuery,
     useUpdateUserMutation,
-    useDeleteUserMutation
+    useDeleteUserMutation,
+    useVerifyOtpMutation,
 } = userApi;

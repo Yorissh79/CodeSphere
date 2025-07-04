@@ -9,6 +9,7 @@ import StudentAnswersModal from './StudentAnswersModal';
 import LoadingSkeleton from './LoadingSkeleton';
 import ErrorFallback from './ErrorFallback';
 import type {Quiz, StudentEvaluation, User, Question, AnswerPayload} from './types';
+import {Award, Clock, Lock, Unlock} from 'lucide-react';
 
 const QuizAnalysisPage: React.FC = () => {
     const [selectedQuizId, setSelectedQuizId] = useState<string | null>(null);
@@ -16,30 +17,21 @@ const QuizAnalysisPage: React.FC = () => {
     const [page, setPage] = useState(1);
     const limit = 10; // Students per page
 
-    // Fetch all quizzes
     const {data: quizzes, isLoading: quizzesLoading, error: quizzesError} = useGetAllQuizzesQuery();
-
-    // Fetch questions for the selected quiz (skip if no quiz selected)
     const {data: questions, isLoading: questionsLoading, error: questionsError} = useGetQuestionsByQuizQuery(
         selectedQuizId || '',
         {skip: !selectedQuizId}
     );
-
-    // Fetch all users (filter students)
     const {data: users, isLoading: usersLoading, error: usersError} = useGetAllUsersQuery({role: 'student'});
-
-    // Fetch answers for the selected quiz
     const {data: answers, isLoading: answersLoading, error: answersError} = useGetQuizAnswersQuery(
         selectedQuizId || '',
         {skip: !selectedQuizId}
     );
 
-    // Filter students who have submitted (based on answers)
     const participatingStudents = users?.filter((user: User) =>
         answers?.some((answer: AnswerPayload) => answer.studentId === user._id)
     );
 
-    // Transform answers into StudentEvaluation format
     const studentAnswers: StudentEvaluation[] = participatingStudents?.map((student: User) => {
         const studentAnswers = answers?.filter((answer: AnswerPayload) => answer.studentId === student._id) || [];
         return {
@@ -50,43 +42,41 @@ const QuizAnalysisPage: React.FC = () => {
                 return answer || {
                     studentId: student._id,
                     questionId: question._id,
-                    answer: '', // Use empty string instead of null
+                    answer: '',
                     timeSpent: 0,
                     changedCount: 0,
                 };
             }) || [],
-            totalScore: 0, // Placeholder, as scoring logic is not provided
+            totalScore: 0,
         };
     }) || [];
 
-    // Find selected student for modal
     const selectedStudent = participatingStudents?.find((student: User) => student._id === selectedStudentId);
 
-    // Loading state for quiz list
     const isQuizListLoading = quizzesLoading || usersLoading;
-
-    // Loading state for quiz details
     const isQuizDetailsLoading = questionsLoading || answersLoading;
-
-    // Error state
     const error = quizzesError || questionsError || usersError || answersError;
 
-    // Calculate total students for pagination
     const total = participatingStudents?.length || 0;
     const paginatedStudents = participatingStudents?.slice((page - 1) * limit, page * limit) || [];
 
-    // Animation variants
     const containerVariants = {
         hidden: {opacity: 0},
-        visible: {opacity: 1, transition: {duration: 0.3}},
+        visible: {opacity: 1, transition: {duration: 0.5, staggerChildren: 0.1}},
     };
 
     const cardVariants = {
-        hidden: {opacity: 0, y: 20},
+        hidden: {opacity: 0, y: 50, scale: 0.9},
         visible: (i: number) => ({
             opacity: 1,
             y: 0,
-            transition: {delay: i * 0.1},
+            scale: 1,
+            transition: {
+                type: "spring",
+                stiffness: 200,
+                damping: 20,
+                delay: i * 0.05,
+            },
         }),
     };
 
@@ -100,20 +90,22 @@ const QuizAnalysisPage: React.FC = () => {
 
     return (
         <motion.div
-            className="p-6 max-w-7xl mx-auto"
+            className="p-6 mx-auto w-full min-h-screen bg-gray-50 dark:bg-gray-900 font-sans transition-colors duration-300"
             variants={containerVariants}
             initial="hidden"
             animate="visible"
         >
-            <h1 className="text-2xl font-bold mb-6">Teacher Quiz Dashboard</h1>
+            <h1 className="text-4xl font-extrabold text-gray-800 dark:text-gray-100 mb-8 border-b-4 border-blue-500 pb-2 inline-block">Teacher
+                Quiz Dashboard</h1>
 
-            {/* Quiz List */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-12">
                 {quizzes.map((quiz: Quiz, index: number) => (
                     <motion.div
                         key={quiz._id}
-                        className={`p-4 rounded-lg shadow-md cursor-pointer transition-colors ${
-                            selectedQuizId === quiz._id ? 'bg-blue-100 border-blue-500 border-2' : 'bg-white hover:bg-gray-50'
+                        className={`p-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer flex flex-col justify-between
+                            ${selectedQuizId === quiz._id
+                            ? 'bg-gradient-to-br from-blue-500 to-blue-700 text-white border-2 border-blue-800 transform scale-105'
+                            : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 border border-gray-200 dark:border-gray-700 hover:scale-[1.02]'
                         }`}
                         variants={cardVariants}
                         initial="hidden"
@@ -121,21 +113,37 @@ const QuizAnalysisPage: React.FC = () => {
                         custom={index}
                         onClick={() => {
                             setSelectedQuizId(quiz._id);
-                            setSelectedStudentId(null); // Reset student selection
-                            setPage(1); // Reset pagination
+                            setSelectedStudentId(null);
+                            setPage(1);
                         }}
                     >
-                        <h2 className="text-lg font-semibold">{quiz.title || 'Untitled Quiz'}</h2>
-                        <p className="text-sm text-gray-600">Time Limit: {quiz.timeLimit || 0} minutes</p>
-                        <p className="text-sm text-gray-600">Status: {quiz.opened ? 'Open' : 'Closed'}</p>
+                        <div>
+                            <h2 className="text-xl font-bold mb-2 flex items-center">
+                                <Award className="mr-2" size={20}/>
+                                {quiz.title || 'Untitled Quiz'}
+                            </h2>
+                            <p className={`text-sm ${selectedQuizId === quiz._id ? 'text-blue-100' : 'text-gray-600 dark:text-gray-300'} mb-1 flex items-center`}>
+                                <Clock className="mr-2" size={16}/>
+                                Time Limit: {quiz.timeLimit || 0} minutes
+                            </p>
+                            <p className={`text-sm ${selectedQuizId === quiz._id ? 'text-blue-100' : 'text-gray-600 dark:text-gray-300'} flex items-center`}>
+                                {quiz.opened ? <Unlock className="mr-2" size={16}/> :
+                                    <Lock className="mr-2" size={16}/>}
+                                Status: {quiz.opened ? 'Open' : 'Closed'}
+                            </p>
+                        </div>
                     </motion.div>
                 ))}
             </div>
 
-            {/* Quiz Analysis */}
             {selectedQuizId && (
-                <div>
-                    <h2 className="text-xl font-bold mb-4">
+                <motion.div
+                    initial={{opacity: 0, y: 20}}
+                    animate={{opacity: 1, y: 0}}
+                    transition={{delay: 0.3, duration: 0.5}}
+                    className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-2xl border border-gray-100 dark:border-gray-700 transition-colors duration-300"
+                >
+                    <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-6 border-b border-gray-200 dark:border-gray-600 pb-3">
                         Analysis for {quizzes.find((q: Quiz) => q._id === selectedQuizId)?.title || 'Selected Quiz'}
                     </h2>
                     {isQuizDetailsLoading ? (
@@ -166,7 +174,7 @@ const QuizAnalysisPage: React.FC = () => {
                             )}
                         </>
                     )}
-                </div>
+                </motion.div>
             )}
         </motion.div>
     );

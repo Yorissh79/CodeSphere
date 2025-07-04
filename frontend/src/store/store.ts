@@ -12,6 +12,8 @@ import {questionApi} from "../services/questionApi.ts";
 import {answerApi} from "../services/answerApi.ts";
 import {baseApi} from "../services/baseApi.ts";
 import {commentApi} from "../services/commentsApi.ts";
+import {contentApi} from "../services/contentApi.ts";
+import {emailApi} from "../services/emailApi.ts";
 
 export const store = configureStore({
     reducer: {
@@ -27,6 +29,8 @@ export const store = configureStore({
         [answerApi.reducerPath]: answerApi.reducer,
         [commentApi.reducerPath]: commentApi.reducer,
         [baseApi.reducerPath]: baseApi.reducer,
+        [contentApi.reducerPath]: contentApi.reducer,
+        [emailApi.reducerPath]: emailApi.reducer,
     },
     middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware().concat(
@@ -42,6 +46,8 @@ export const store = configureStore({
             answerApi.middleware,
             commentApi.middleware,
             baseApi.middleware,
+            contentApi.middleware,
+            emailApi.middleware,
         ),
 });
 

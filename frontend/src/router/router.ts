@@ -4,8 +4,8 @@ import Signup from "../pages/signup/Signup.tsx";
 import SignupTeacher from "../pages/signup/SignupTeacher.tsx";
 import Login from "../pages/login/Login.tsx";
 import NotFound from "../pages/notfound/NotFound.tsx";
-import Home from "../pages/student/home/Home.tsx";
-import Homet from "../pages/teacher/home/Home.tsx";
+import Home from "../pages/student/home/Home.tsx"; // Student Home component
+import Homet from "../pages/teacher/home/Home.tsx"; // Teacher Home component
 import PP from "../pages/contactpages/pp/PP.tsx";
 import About from "../pages/contactpages/about/About.tsx";
 import Contact from "../pages/contactpages/contact/Contact.tsx";
@@ -35,6 +35,10 @@ import TeacherDashboard from "../pages/teacher/task/TeacherDashboard.tsx";
 import studentDashboard from "../pages/student/task/StudentDashboard.tsx";
 import HomePage from "../pages/first/HomePage.tsx";
 import BrowserCodeEditor from "../pages/codeeditor/CodeEditor.tsx";
+// import GoogleAuth from "../pages/auth/GoogleAuth.tsx";
+import GoogleLayout from "../components/googleLayout/GoogleLayout.tsx";
+import VerifyOtp from "../pages/signup/VerifyOtp.tsx";
+// import ContentManager from "../pages/admin/contentmanager/ContentManager.tsx";
 
 export const router = createBrowserRouter([
     {
@@ -87,6 +91,10 @@ export const router = createBrowserRouter([
                 path: "complete-signup",
                 Component: CompleteSignup
             },
+            {
+                path: "verify-otp",
+                Component: VerifyOtp
+            }
         ]
     },
     {
@@ -115,6 +123,69 @@ export const router = createBrowserRouter([
                     {
                         path: "code-editor",
                         Component: BrowserCodeEditor
+                    }
+                ]
+            },
+            {
+                // Google authenticated user routes
+                path: "google",
+                Component: GoogleLayout, // This layout will handle common elements for Google users
+                children: [
+                    {
+                        // Google Student Dashboard and related routes
+                        path: "student",
+                        children: [
+                            {
+                                path: "",
+                                Component: Home // Use existing Home component for student dashboard
+                            },
+                            {
+                                path: "misses",
+                                Component: MissesS
+                            },
+                            {
+                                path: "quiz",
+                                Component: QuizS
+                            },
+                            {
+                                path: "task",
+                                Component: studentDashboard
+                            },
+                            {
+                                path: "code-editor",
+                                Component: BrowserCodeEditor
+                            }
+                        ]
+                    },
+                    {
+                        // Google Teacher Dashboard and related routes
+                        path: "teacher",
+                        children: [
+                            {
+                                path: "",
+                                Component: Homet, // Use existing Homet component for teacher dashboard
+                            },
+                            {
+                                path: "misses",
+                                Component: MissesT
+                            },
+                            {
+                                path: "quiz",
+                                Component: QuizT
+                            },
+                            {
+                                path: "quizchecker",
+                                Component: QuizAnalysisPage
+                            },
+                            {
+                                path: "task",
+                                Component: TeacherDashboard
+                            },
+                            {
+                                path: "code-editor",
+                                Component: BrowserCodeEditor
+                            }
+                        ]
                     }
                 ]
             },
@@ -179,7 +250,11 @@ export const router = createBrowserRouter([
                     {
                         path: "quiz",
                         Component: QuizA
-                    }
+                    },
+                    // {
+                    //     path: "content",
+                    //     Component: ContentManager
+                    // }
                 ]
             },
         ]

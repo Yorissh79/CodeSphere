@@ -53,7 +53,10 @@ export const authCheck = createApi({
                 method: 'GET',
             }),
         }),
+        checkGoogleAuth: builder.query<any, void>({
+            query: () => 'auth/google/check',
+        }),
     }),
 });
 
-export const {useCheckAuthQuery, useCheckTeacherAuthQuery, useCheckAdminAuthQuery} = authCheck;
+export const {useCheckAuthQuery, useCheckTeacherAuthQuery, useCheckAdminAuthQuery, useCheckGoogleAuthQuery} = authCheck;
