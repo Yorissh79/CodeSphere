@@ -11,7 +11,7 @@ import {quizApi} from "../services/quizApi.ts";
 import {questionApi} from "../services/questionApi.ts";
 import {answerApi} from "../services/answerApi.ts";
 import {baseApi} from "../services/baseApi.ts";
-import {commentApi} from "../services/commentsApi.ts";
+// import {commentApi} from "../services/commentsApi.ts";
 import {contentApi} from "../services/contentApi.ts";
 import {emailApi} from "../services/emailApi.ts";
 
@@ -27,7 +27,7 @@ export const store = configureStore({
         [quizApi.reducerPath]: quizApi.reducer,
         [questionApi.reducerPath]: questionApi.reducer,
         [answerApi.reducerPath]: answerApi.reducer,
-        [commentApi.reducerPath]: commentApi.reducer,
+        // [commentApi.reducerPath]: commentApi.reducer,
         [baseApi.reducerPath]: baseApi.reducer,
         [contentApi.reducerPath]: contentApi.reducer,
         [emailApi.reducerPath]: emailApi.reducer,
@@ -44,7 +44,7 @@ export const store = configureStore({
             quizApi.middleware,
             questionApi.middleware,
             answerApi.middleware,
-            commentApi.middleware,
+            // commentApi.middleware,
             baseApi.middleware,
             contentApi.middleware,
             emailApi.middleware,
