@@ -75,7 +75,7 @@ const AdvancedCodeEditor: React.FC = () => {
     const [showSaveDialog, setShowSaveDialog] = useState<boolean>(false);
     const [isSaving, setIsSaving] = useState<boolean>(false);
     const [showExplorer, setShowExplorer] = useState<boolean>(true);
-    const [githubToken, setGithubToken] = useState<string | null>(null);
+    const [githubToken] = useState<string | null>(null);
 
     useEffect(() => {
         const handleBeforeUnload = (e: BeforeUnloadEvent) => {

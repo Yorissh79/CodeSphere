@@ -3,12 +3,17 @@ import {motion} from 'framer-motion';
 import {useGetAllQuizzesQuery} from '../../../services/quizApi';
 import {useGetQuestionsByQuizQuery} from '../../../services/questionApi';
 import {useGetAllUsersQuery} from '../../../services/userApi';
+
+// 1. Import both the hook and the correct AnswerPayload type from the API service
 import {useGetQuizAnswersQuery} from '../../../services/answerApi';
+
 import {StudentAnswerTable} from './StudentAnswerTable';
 import StudentAnswersModal from './StudentAnswersModal';
 import LoadingSkeleton from './LoadingSkeleton';
 import ErrorFallback from './ErrorFallback';
-import type {Quiz, StudentEvaluation, User, Question, AnswerPayload} from './types';
+
+// 2. Remove the conflicting AnswerPayload from the local types import
+import type {Quiz, StudentEvaluation, User, Question} from './types';
 import {Award, Clock, Lock, Unlock} from 'lucide-react';
 
 const QuizAnalysisPage: React.FC = () => {
@@ -28,17 +33,20 @@ const QuizAnalysisPage: React.FC = () => {
         {skip: !selectedQuizId}
     );
 
+    // 3. Let TypeScript infer the type of `answer` from the `answers` array
     const participatingStudents = users?.filter((user: User) =>
-        answers?.some((answer: AnswerPayload) => answer.studentId === user._id)
+        answers?.some(answer => answer.studentId === user._id)
     );
 
+    // 4. Let TypeScript infer types for `answer` and `ans` here as well
     const studentAnswers: StudentEvaluation[] = participatingStudents?.map((student: User) => {
-        const studentAnswers = answers?.filter((answer: AnswerPayload) => answer.studentId === student._id) || [];
+        const studentAnswersForCurrentStudent = answers?.filter(answer => answer.studentId === student._id) || [];
         return {
             studentId: student._id,
             studentName: `${student.name || ''} ${student.surname || ''}`.trim(),
             answers: questions?.map((question: Question) => {
-                const answer = studentAnswers.find((ans: AnswerPayload) => ans.questionId === question._id);
+                const answer = studentAnswersForCurrentStudent.find(ans => ans.questionId === question._id);
+                // The new AnswerPayload type correctly handles a potentially undefined `answer`
                 return answer || {
                     studentId: student._id,
                     questionId: question._id,

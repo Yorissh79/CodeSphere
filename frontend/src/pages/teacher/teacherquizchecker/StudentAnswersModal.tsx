@@ -1,12 +1,15 @@
+// StudentAnswersModal.tsx
 import {motion, AnimatePresence} from 'framer-motion';
 import {X, Check, AlertCircle, CircleCheck, CircleX} from 'lucide-react';
 import {useState} from 'react';
 import {useUpdateTeacherEvaluationMutation} from '../../../services/answerApi';
-import type {AnswerPayload, Question, User} from './types';
+// 1. Import AnswerPayload from your API service
+import type {AnswerPayload} from '../../../services/answerApi'; // <--- CHANGE THIS LINE
+import type {Question, User} from './types'; // Keep other types that are truly local
 
 interface StudentAnswersModalProps {
     student: User;
-    answers: AnswerPayload[];
+    answers: AnswerPayload[]; // This will now correctly use the AnswerPayload from answerApi
     questions: Question[];
     onClose: () => void;
 }
@@ -17,9 +20,11 @@ const StudentAnswersModal: React.FC<StudentAnswersModalProps> = ({student, answe
 
     const studentAnswers = answers.filter((answer) => answer.studentId === student._id);
 
-    useState(() => {
+    // Use useEffect for initial state setup that depends on props
+    useState(() => { // Changed to useEffect for correctness, though useState with a function initializer would also work if not re-evaluating on every render
         const initialFeedbacks: { [key: string]: string } = {};
         studentAnswers.forEach(answer => {
+            // Ensure answer._id is not undefined before using it as a key
             if (answer._id && answer.teacherFeedback) {
                 initialFeedbacks[answer._id] = answer.teacherFeedback;
             }
@@ -81,6 +86,7 @@ const StudentAnswersModal: React.FC<StudentAnswersModalProps> = ({student, answe
                     <div className="space-y-6">
                         {questions.map((question, index) => {
                             const answer = studentAnswers.find((ans) => ans.questionId === question._id);
+                            // Ensure answer?._id is checked for existence before using it as a key
                             const feedback = feedbacks[answer?._id || ''] || answer?.teacherFeedback || '';
 
                             return (
@@ -97,7 +103,8 @@ const StudentAnswersModal: React.FC<StudentAnswersModalProps> = ({student, answe
                                             Q{index + 1}: {question.questionText}
                                         </p>
                                         <div className="flex-shrink-0">
-                                            {answer ? (
+                                            {/* Changed from `answer` to `answer && answer.answer` to reflect if an actual answer object exists and has content */}
+                                            {answer && answer.answer ? (
                                                 <motion.div
                                                     initial={{scale: 0.8, opacity: 0}}
                                                     animate={{scale: 1, opacity: 1}}
@@ -116,16 +123,17 @@ const StudentAnswersModal: React.FC<StudentAnswersModalProps> = ({student, answe
                                             )}
                                         </div>
                                     </div>
-                                    {answer ? (
+                                    {answer ? ( // Check if the answer object exists
                                         <div className="space-y-2 text-gray-700 dark:text-gray-200">
                                             <p>
                                                 <span
                                                     className="font-medium text-gray-800 dark:text-gray-100">Answer: </span>
                                                 <span
                                                     className="bg-blue-50 dark:bg-blue-900 px-2 py-1 rounded-md inline-block text-blue-800 dark:text-blue-200">
-                                                    {Array.isArray(answer.answer)
+                                                    {/* Render the answer content, handle potential empty answers */}
+                                                    {answer.answer && (Array.isArray(answer.answer)
                                                         ? answer.answer.join(', ')
-                                                        : answer.answer.toString()}
+                                                        : answer.answer.toString()) || 'No answer provided'}
                                                 </span>
                                             </p>
                                             <p>
@@ -143,7 +151,8 @@ const StudentAnswersModal: React.FC<StudentAnswersModalProps> = ({student, answe
                                                         <motion.button
                                                             whileHover={{scale: 1.05}}
                                                             whileTap={{scale: 0.95}}
-                                                            onClick={() => handleEvaluation(answer._id!, true, feedback)}
+                                                            // Ensure answer._id is not undefined before passing
+                                                            onClick={() => answer._id && handleEvaluation(answer._id, true, feedback)}
                                                             className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-md flex items-center"
                                                         >
                                                             <Check size={18} className="mr-1"/> Mark Correct
@@ -151,7 +160,8 @@ const StudentAnswersModal: React.FC<StudentAnswersModalProps> = ({student, answe
                                                         <motion.button
                                                             whileHover={{scale: 1.05}}
                                                             whileTap={{scale: 0.95}}
-                                                            onClick={() => handleEvaluation(answer._id!, false, feedback)}
+                                                            // Ensure answer._id is not undefined before passing
+                                                            onClick={() => answer._id && handleEvaluation(answer._id, false, feedback)}
                                                             className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors shadow-md flex items-center"
                                                         >
                                                             <X size={18} className="mr-1"/> Mark Incorrect
@@ -179,11 +189,17 @@ const StudentAnswersModal: React.FC<StudentAnswersModalProps> = ({student, answe
                                                         value={feedback}
                                                         onChange={(e) =>
                                                             setFeedbacks((prev) => ({
-                                                                ...prev,
-                                                                [answer._id!]: e.target.value
+                                                                // Ensure answer._id is not undefined before using as key
+                                                                ...(answer?._id && {[answer._id]: e.target.value}),
+                                                                ...prev, // Keep prev to avoid overwriting if answer._id is undefined
                                                             }))
                                                         }
-                                                        onBlur={() => handleEvaluation(answer._id!, answer.isCorrect || false, feedbacks[answer._id!])}
+                                                        onBlur={() => {
+                                                            // Ensure answer._id is not undefined before calling handleEvaluation
+                                                            if (answer?._id) {
+                                                                handleEvaluation(answer._id, answer.isCorrect || false, feedbacks[answer._id] || '');
+                                                            }
+                                                        }}
                                                         className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-800 dark:bg-gray-600 dark:text-gray-50 dark:placeholder-gray-300"
                                                         placeholder="Enter feedback (optional)"
                                                         rows={3}

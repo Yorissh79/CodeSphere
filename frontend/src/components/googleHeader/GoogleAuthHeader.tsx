@@ -1,4 +1,3 @@
-// src/components/GoogleAuthHeader.tsx
 import {useNavigate, useLocation, Link} from "react-router-dom";
 import {useDarkMode} from "../../hooks/useDarkMode.ts";
 import {useEffect, useState} from "react";
@@ -19,8 +18,7 @@ const GoogleAuthHeader: React.FC = () => {
     const {
         data: authData,
         isError: authError,
-        isLoading: authLoading,
-        refetch: refetchAuth
+        isLoading: authLoading
     } = useCheckGoogleAuthQuery();
 
     useEffect(() => {
